@@ -2,7 +2,6 @@ package croconf
 
 import (
 	"encoding"
-	"strconv"
 
 	"github.com/spf13/pflag"
 )
@@ -94,15 +93,25 @@ func (cb *cliBinding) BindIntValue() func(bitSize int) (int64, error) {
 			if cb.source.flagSet.NArg() < cb.position {
 				return 0, ErrorMissing
 			}
-			// TODO: use a custom function with better error message
-			return strconv.ParseInt(cb.source.flagSet.Arg(cb.position-1), 10, bitSize)
+			s := cb.source.flagSet.Arg(cb.position - 1)
+			val, err := parseInt(s, 10, bitSize)
+			if err != nil {
+				setErrorFunc(err, "BindIntValue")
+				return 0, err
+			}
+			return val, nil
 		}
 	}
 	s := cb.source.flagSet.StringP(cb.longhand, cb.shorthand, "", "")
 	return func(bitSize int) (int64, error) {
 		if f := cb.source.flagSet.Lookup(cb.longhand); f.Changed {
-			// TODO: use a custom function with better error message
-			return strconv.ParseInt(*s, 10, bitSize)
+
+			val, err := parseInt(*s, 10, bitSize)
+			if err != nil {
+				setErrorFunc(err, "BindIntValue")
+				return 0, err
+			}
+			return val, nil
 		}
 		return 0, ErrorMissing
 	}

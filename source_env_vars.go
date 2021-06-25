@@ -2,8 +2,11 @@ package croconf
 
 import (
 	"encoding"
+<<<<<<< HEAD
 	"fmt"
 	"strconv"
+=======
+>>>>>>> 6e1bf46 ([feat] basic types extension)
 	"strings"
 )
 
@@ -66,11 +69,49 @@ func (eb *envBinding) BindStringValueTo(dest *string) func() error {
 
 func (eb *envBinding) BindIntValue() func(bitSize int) (int64, error) {
 	return func(bitSize int) (int64, error) {
+<<<<<<< HEAD
 		val, err := eb.lookup()
 		if err != nil {
 			return 0, err
+=======
+		val, ok := eb.source.env[eb.name]
+		if !ok {
+			return 0, NewBindNameMissingError("BindIntValue", eb.name)
+>>>>>>> 6e1bf46 ([feat] basic types extension)
 		}
-		return strconv.ParseInt(val, 10, bitSize) // TODO: use a custom function with better error messages
+		intVal, err := parseInt(val, 10, bitSize)
+		if err != nil {
+			return 0, err.withFuncName("BindIntValue")
+		}
+		return intVal, nil
+	}
+}
+
+func (eb *envBinding) BindUintValue() func(bitSize int) (uint64, error) {
+	return func(bitSize int) (uint64, error) {
+		strVal, ok := eb.source.env[eb.name]
+		if !ok {
+			return 0, NewBindNameMissingError("BindUintValue", eb.name)
+		}
+		intVal, err := parseUint(strVal, 10, bitSize)
+		if err != nil {
+			return 0, err.withFuncName("BindUintValue")
+		}
+		return intVal, nil
+	}
+}
+
+func (eb *envBinding) BindFloatValue() func(bitSize int) (float64, error) {
+	return func(bitSize int) (float64, error) {
+		strVal, ok := eb.source.env[eb.name]
+		if !ok {
+			return 0, NewBindNameMissingError("BindFloatValue", eb.name)
+		}
+		val, err := parseFloat(strVal, bitSize)
+		if err != nil {
+			return 0, err.withFuncName("BindFloatValue")
+		}
+		return val, nil
 	}
 }
 

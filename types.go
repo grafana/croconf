@@ -24,9 +24,8 @@ type LazySingleValueBinding interface {
 	SourceGetter
 	StringValueBinding
 	IntValueBinding
-	// TODO: uncomment when we implement them
-	// UintValueBinding
-	// FloatValueBinding
+	UintValueBinding
+	FloatValueBinding
 	TextBasedValueBinding
 }
 

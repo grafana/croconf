@@ -35,8 +35,8 @@ A flexible and composable configuration library for Go that doesn't suck
 - If the config objects are pointers, and config properties are values in the config structs but passed by pointers to the croconf functions, you have these pros and cons:
     - pro: mostly have a very type safe API without reflection/type assertion
     - pro: you can use the property pointers as keys in the "Has field `X` been changed?" questions
-    - pro: you can copy
     - con: some config user will be able to modify the config deep in the codebase
+    - pro/con: you can copy the config values by just copying the struct, but if you have nested structs by pointer or a `crocon.Manager` (if we stick with that), it will be a big problem...
 - Error reporting is tricky... we want it to be as user-friendly as possible, bit there are at least 3 distinct parts:
     1. parsing errors, e.g. a completely invalid JSON/YAML/etc. file - we can't continue from this, we can only show as many details as possible
     2. parsing and type errors for specific fields (e.g. trying to pass a string as an int) - ideally, we should be able to collect all of these errors from all of the sources (CLI, env vars, JSON, etc.) and show them in a single user-friendly list

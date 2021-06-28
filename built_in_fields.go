@@ -30,7 +30,8 @@ func (f *field) Destination() interface{} {
 func newField(dest interface{}, sourcesLen int, callback func(sourceNum int) (SourceGetter, error)) *field {
 	// TODO: figure out some way to improve this?
 	f := &field{destination: dest}
-	f.consolidate = func() (errs []error) {
+	f.consolidate = func() []error {
+		var errs []error
 		for i := 0; i < sourcesLen; i++ {
 			sourceGetter, err := callback(i)
 			if err == nil {
@@ -39,7 +40,7 @@ func newField(dest interface{}, sourcesLen int, callback func(sourceNum int) (So
 					f.hasBeenSet = true
 				}
 			} else if !errors.Is(ErrorMissing, err) {
-				errs = append(errs)
+				errs = append(errs, err)
 			}
 		}
 		return errs
@@ -55,7 +56,6 @@ func NewInt64Field(dest *int64, sources ...Int64ValueSource) Field {
 
 func NewStringField(dest *string, sources ...StringValueSource) Field {
 	return newField(dest, len(sources), func(sourceNum int) (SourceGetter, error) {
-		//log.Printf("%d %#T %#q", sourceNum, dest, sources)
 		return sources[sourceNum], sources[sourceNum].SaveStringTo(dest)
 	})
 }

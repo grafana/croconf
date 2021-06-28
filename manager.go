@@ -1,19 +1,36 @@
 package croconf
 
+type Field interface {
+}
+
+func NewInt64Field(field *int64, sources ...Int64ValueSource) Field {
+	return nil
+}
+
+func NewStringField(field *string, sources ...StringValueSource) Field {
+	return nil
+}
+
 type Manager struct {
-	//TODO: internal data structure for tracking things
+	fields []Field
+	// TODO: internal data structure for tracking things
+}
+
+func (m *Manager) MarshalJSON() ([]byte, error) {
+	// TODO:
+	// do you emit defaut value (0, "") or null or nothing for unset fields
+	return []byte(""), nil
 }
 
 func (m *Manager) GetManager() *Manager {
 	return m
 }
 
-func (m *Manager) Int64Field(field *int64, defaultVal int64, sources ...Int64ValueSource) {
-	//TODO: actually track this field in some internal data structure and set its default value
-}
+type FieldOption func(field Field)
 
-func (m *Manager) StringField(field *string, defaultVal string, sources ...StringValueSource) {
-	//TODO: actually track this field in some internal data structure and set its default value
+func (m *Manager) AddField(field Field, options ...FieldOption) {
+	// TODO: actually track this field in some internal data structure and set its default value
+	m.fields = append(m.fields, field)
 }
 
 func (m *Manager) HasChanged(field *interface{}) bool {

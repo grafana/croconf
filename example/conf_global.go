@@ -1,6 +1,8 @@
 package main
 
-import "go.k6.io/croconf"
+import (
+	"go.k6.io/croconf"
+)
 
 type GlobalConfig struct {
 	cm *croconf.Manager
@@ -19,17 +21,40 @@ func NewGlobalConfig(
 	cm := croconf.NewManager()
 	conf := &GlobalConfig{cm: cm}
 
-	cm.StringField(
-		&conf.SubCommand,
-		croconf.DefaultStringValue("run"),
-		cliSource.FromPositionalArg(1),
+	cm.AddField(
+		croconf.NewStringField(
+			&conf.SubCommand,
+			//croconf.DefaultStringValue("run"),
+			cliSource.FromPositionalArg(1),
+		),
+		/*
+			croconf.IsRequired(),
+			croconf.WithDescription("k6 sub-command"),
+			croconf.WithValidator(func() error {
+				// TODO: validate
+				if conf.SubCommand != "run" || conf.SubCommand != "cloud" {
+					return errors.New("foo")
+				}
+			}),
+		*/
 	)
 
-	cm.StringField(
-		&conf.JSONConfigPath,
-		croconf.DefaultStringValue("~/.config/loadimpact/k6/config.json"),
-		envVarsSource.From("K6_CONFIG"),
-		cliSource.FromNameAndShorthand("--config", "-c"),
+	cm.AddField(
+		croconf.NewStringField(
+			&conf.JSONConfigPath,
+			croconf.DefaultStringValue("~/.config/loadimpact/k6/config.json"),
+			envVarsSource.From("K6_CONFIG"),
+			cliSource.FromNameAndShorthand("--config", "-c"),
+		),
+		/*
+			croconf.WithDescription("path to k6 JSON config file"),
+			croconf.WithValidator(func() error {
+				// TODO: validate
+				if conf.SubCommand != "run" || conf.SubCommand != "cloud" {
+					return errors.New("foo")
+				}
+			}),
+		*/
 	)
 
 	// TODO: add the other options and actually process and consolidate the

@@ -24,7 +24,7 @@ A flexible and composable configuration library for Go that doesn't suck
     - Supports warnings for things like deprecated variables
 7. An easy way to marshal the whole consolidated config, e.g. to a JSON file. Ideally, we should be able to specify whether we want only the changed values, or all of the values (incl. any default ones).
 8. Stretch goal: the metadata should be rich enough so that a whole application framework like cobra can be built on top of it, including generation of man pages and auto-completion
-
+9. We should only parse anything once
 
 ### Misc thoughts:
 - The building of the final config can be a multi-step process. For example, you may first need to understand which sub-command is going to be used (e.g. `k6 run`, `k6 cloud`, `k6 resume`, etc.), before you actually know _what_ config options are even possible.
@@ -40,6 +40,7 @@ A flexible and composable configuration library for Go that doesn't suck
 - Error reporting is tricky... we want it to be as user-friendly as possible, bit there are at least 3 distinct parts:
     1. parsing errors, e.g. a completely invalid JSON/YAML/etc. file - we can't continue from this, we can only show as many details as possible
     2. parsing and type errors for specific fields (e.g. trying to pass a string as an int) - ideally, we should be able to collect all of these errors from all of the sources (CLI, env vars, JSON, etc.) and show them in a single user-friendly list
+        - this is probably also the step where we can _sometimes_ complain that there are unknown options (e.g. `unknown CLI flag X` or `unknown JSON option Y`, if we know what all of the possible options/values can be at this step)
     3. validation - this is tricky, it's the last step (i.e. we only validate the final consolidated values) and validation logic can spread between multiple fields (e.g. option `X` should be less than or equal to option `Y`)
 
 ### Proposed TODO:

@@ -3,8 +3,8 @@ package main
 import "go.k6.io/croconf"
 
 type ScriptConfig struct {
-	*GlobalConfig
 	cm *croconf.Manager
+	*GlobalConfig
 
 	UserAgent string
 	VUs       int64
@@ -21,24 +21,26 @@ func NewScriptConfig(
 	cm := croconf.NewManager()
 	conf := &ScriptConfig{GlobalConfig: globalConf, cm: cm} // TODO: somehow save the sources in the struct as well?
 
-	cm.StringField(
-		&conf.UserAgent,
-		croconf.DefaultStringValue("croconf example demo v0.0.1 (https://k6.io/)"),
-		jsonSource.From("userAgent"),
-		envVarsSource.From("K6_USER_AGENT"),
-		cliSource.FromName("--user-agent"),
-		// TODO: figure this out...
-		// croconf.WithDescription("user agent for http requests")
+	cm.AddField(
+		croconf.NewStringField(
+			&conf.UserAgent,
+			croconf.DefaultStringValue("croconf example demo v0.0.1 (https://k6.io/)"),
+			jsonSource.From("userAgent"),
+			envVarsSource.From("K6_USER_AGENT"),
+			cliSource.FromName("--user-agent"),
+			// TODO: figure this out...
+			// croconf.WithDescription("user agent for http requests")
+		),
 	)
 
-	cm.Int64Field(
+	cm.AddField(croconf.NewInt64Field(
 		&conf.VUs,
 		croconf.DefaultInt64Value(1),
 		jsonSource.From("vus"),
 		envVarsSource.From("K6_VUS"),
 		cliSource.FromNameAndShorthand("--vus", "-u"),
 		// croconf.WithDescription("number of virtual users") // TODO
-	)
+	))
 
 	// TODO: add the other options and actually process and consolidate the
 	// config values and handle any errors... Here we probably want to error out

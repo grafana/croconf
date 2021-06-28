@@ -1,11 +1,12 @@
 package croconf
 
 type SourceCLI struct {
-	//TODO
+	flags []string
+	// TODO
 }
 
-func (sc *SourceCLI) ParseAndApply() error {
-	return nil // TODO
+func NewSourceFromCLIFlags(flags []string) *SourceCLI {
+	return &SourceCLI{flags: flags}
 }
 
 func (sc *SourceCLI) FromName(name string) MultiSingleValueSource {

@@ -1,4 +1,15 @@
 {
     "vus": 4,
-    "userAgent": "test"
+    "userAgent": "test",
+    "duration": "1s",
+    "stages": [
+        {
+            "duration": "1s",
+            "target": 123
+        },
+        {
+            "duration": "1s",
+            "target": 123
+        }
+    ]
 }

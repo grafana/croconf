@@ -1,6 +1,7 @@
 package croconf
 
 import (
+	"encoding"
 	"errors"
 )
 
@@ -49,6 +50,8 @@ func newField(dest interface{}, sourcesLen int, callback func(sourceNum int) (So
 }
 
 func NewInt64Field(dest *int64, sources ...Int64ValueSource) Field {
+	//
+
 	return newField(dest, len(sources), func(sourceNum int) (SourceGetter, error) {
 		return sources[sourceNum], sources[sourceNum].SaveInt64To(dest)
 	})
@@ -57,5 +60,11 @@ func NewInt64Field(dest *int64, sources ...Int64ValueSource) Field {
 func NewStringField(dest *string, sources ...StringValueSource) Field {
 	return newField(dest, len(sources), func(sourceNum int) (SourceGetter, error) {
 		return sources[sourceNum], sources[sourceNum].SaveStringTo(dest)
+	})
+}
+
+func NewCustomField(dest encoding.TextUnmarshaler, sources ...interface{}) Field {
+	return newField(dest, len(sources), func(sourceNum int) (SourceGetter, error) {
+		return nil, nil //TODO
 	})
 }

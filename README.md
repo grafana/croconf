@@ -37,6 +37,10 @@ A flexible and composable configuration library for Go that doesn't suck
     - pro: you can use the property pointers as keys in the "Has field `X` been changed?" questions
     - pro: you can copy
     - con: some config user will be able to modify the config deep in the codebase
+- Error reporting is tricky... we want it to be as user-friendly as possible, bit there are at least 3 distinct parts:
+    1. parsing errors, e.g. a completely invalid JSON/YAML/etc. file - we can't continue from this, we can only show as many details as possible
+    2. parsing and type errors for specific fields (e.g. trying to pass a string as an int) - ideally, we should be able to collect all of these errors from all of the sources (CLI, env vars, JSON, etc.) and show them in a single user-friendly list
+    3. validation - this is tricky, it's the last step (i.e. we only validate the final consolidated values) and validation logic can spread between multiple fields (e.g. option `X` should be less than or equal to option `Y`)
 
 ### Proposed TODO:
 0. Figure out a usable Go API (e.g. with initial support for just a few Go types like `string`, `int64` and `bool` that satisfies the criteria :arrow_up: :sweat_smile:

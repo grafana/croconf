@@ -2,8 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
+	"log"
 	"os"
 
 	"go.k6.io/croconf"
@@ -15,6 +18,7 @@ func main() {
 
 	globalConf, err := NewGlobalConfig(cliSource, envVarsSource)
 	if err != nil {
+		log.Fatal(err)
 	}
 
 	// At this point, there are plenty of unknown options still, but we should
@@ -33,12 +37,12 @@ func runCommand(
 	globalConf *GlobalConfig,
 ) {
 	jsonConfigContents, err := ioutil.ReadFile(globalConf.JSONConfigPath)
-	if err != nil {
-		// TODO: handle error
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		log.Fatal(err)
 	}
 	jsonSource, err := croconf.NewJSONSource(jsonConfigContents)
 	if err != nil {
-		// TODO: handle error
+		log.Fatal(err)
 	}
 
 	scriptConf, err := NewScriptConfig(globalConf, cliSource, envVarsSource, jsonSource)
@@ -52,4 +56,13 @@ func runCommand(
 		panic(err)
 	}
 	fmt.Println(string(jsonResult))
+
+	fmt.Println()
+
+	vusMeta := scriptConf.cm.Field(&scriptConf.VUs)
+	if vusMeta.HasBeenSet() {
+		fmt.Printf("Field VUs was manually set by source '%s'\n", vusMeta.SourceOfValue().GetName())
+	} else {
+		fmt.Printf("Field VUs was using the default value\n")
+	}
 }

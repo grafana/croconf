@@ -1,44 +1,57 @@
 package croconf
 
-type Field interface {
-}
-
-func NewInt64Field(field *int64, sources ...Int64ValueSource) Field {
-	return nil
-}
-
-func NewStringField(field *string, sources ...StringValueSource) Field {
-	return nil
-}
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
 
 type Manager struct {
-	fields []Field
+	fields       []Field
+	fieldsByDest map[interface{}]Field
 	// TODO: internal data structure for tracking things
 }
 
-func (m *Manager) MarshalJSON() ([]byte, error) {
-	// TODO:
-	// do you emit defaut value (0, "") or null or nothing for unset fields
-	return []byte(""), nil
+func NewManager() *Manager {
+	return &Manager{
+		fields:       make([]Field, 0),
+		fieldsByDest: make(map[interface{}]Field),
+	}
 }
 
 func (m *Manager) GetManager() *Manager {
 	return m
 }
 
-type FieldOption func(field Field)
-
 func (m *Manager) AddField(field Field, options ...FieldOption) {
-	// TODO: actually track this field in some internal data structure and set its default value
+	// TODO: apply options?
 	m.fields = append(m.fields, field)
+	m.fieldsByDest[field.Destination()] = field
 }
 
-func (m *Manager) HasChanged(field *interface{}) bool {
-	return false //TODO
+func (m *Manager) Field(dest interface{}) Field {
+	return m.fieldsByDest[dest]
 }
 
-func NewManager(...ConfigSource) *Manager {
-	return &Manager{
-		//TODO: initialize internal data structs
+func (m *Manager) Consolidate() error {
+	var errs []error
+
+	for _, f := range m.fields {
+		errs = append(errs, f.Consolidate()...)
 	}
+
+	return consolidateErrorMessage(errs, "Config errors: ")
+}
+
+func consolidateErrorMessage(errList []error, title string) error {
+	if len(errList) == 0 {
+		return nil
+	}
+
+	errMsgParts := []string{title}
+	for _, err := range errList {
+		errMsgParts = append(errMsgParts, fmt.Sprintf("\t- %s", err.Error()))
+	}
+
+	return errors.New(strings.Join(errMsgParts, "\n"))
 }

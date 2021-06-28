@@ -24,8 +24,8 @@ func NewGlobalConfig(
 	cm.AddField(
 		croconf.NewStringField(
 			&conf.SubCommand,
-			//croconf.DefaultStringValue("run"),
-			cliSource.FromPositionalArg(1),
+			croconf.DefaultStringValue("run"),
+			//cliSource.FromPositionalArg(1),
 		),
 		/*
 			croconf.IsRequired(),
@@ -57,8 +57,11 @@ func NewGlobalConfig(
 		*/
 	)
 
-	// TODO: add the other options and actually process and consolidate the
-	// config values and handle any errors
+	// TODO: add the other options and properties
+
+	if err := cm.Consolidate(); err != nil {
+		return nil, err
+	}
 
 	return conf, nil
 }

@@ -7,6 +7,10 @@ func (dsv defaultStringValue) SaveStringTo(dest *string) error {
 	return nil
 }
 
+func (dsv defaultStringValue) GetSource() Source {
+	return nil
+}
+
 func DefaultStringValue(s string) StringValueSource {
 	return defaultStringValue(s)
 }
@@ -15,6 +19,9 @@ type defaultInt64Value int64
 
 func (div defaultInt64Value) SaveInt64To(dest *int64) error {
 	*dest = int64(div)
+	return nil
+}
+func (div defaultInt64Value) GetSource() Source {
 	return nil
 }
 

@@ -46,5 +46,9 @@ func NewScriptConfig(
 	// config values and handle any errors... Here we probably want to error out
 	// if we see unknown CLI flags or JSON options
 
+	if err := cm.Consolidate(); err != nil {
+		return nil, err
+	}
+
 	return conf, nil
 }

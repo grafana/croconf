@@ -67,3 +67,12 @@ func parseEnvKeyValue(kv string) (string, string) {
 	}
 	return kv, ""
 }
+
+func (eb *envBinding) SaveCustomValueTo(dest CustomValue) error {
+	val, ok := eb.source.env[eb.name]
+	if !ok {
+		return ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
+	}
+
+	return dest.ParseFromString(val)
+}

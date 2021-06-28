@@ -61,3 +61,12 @@ func (jb *jsonBinding) SaveInt64To(dest *int64) error {
 
 	return json.Unmarshal(raw, dest) // TODO: less reflection, better error messages
 }
+
+func (jb *jsonBinding) SaveCustomValueTo(dest CustomValue) error {
+	raw, ok := jb.source.fields[jb.name]
+	if !ok {
+		return ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
+	}
+
+	return json.Unmarshal(raw, dest) // TODO: less reflection, better error messages
+}

@@ -65,4 +65,11 @@ func runCommand(
 	} else {
 		fmt.Printf("Field VUs was using the default value\n")
 	}
+
+	durationMeta := scriptConf.cm.Field(&scriptConf.Duration)
+	if durationMeta.HasBeenSet() {
+		fmt.Printf("Field Duration was manually set by source '%s'\n", durationMeta.SourceOfValue().GetName())
+	} else {
+		fmt.Printf("Field Duration was using the default value\n")
+	}
 }

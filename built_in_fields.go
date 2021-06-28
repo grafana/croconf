@@ -1,7 +1,6 @@
 package croconf
 
 import (
-	"encoding"
 	"errors"
 )
 
@@ -63,8 +62,8 @@ func NewStringField(dest *string, sources ...StringValueSource) Field {
 	})
 }
 
-func NewCustomField(dest encoding.TextUnmarshaler, sources ...interface{}) Field {
+func NewCustomField(dest CustomValue, sources ...CustomValueSource) Field {
 	return newField(dest, len(sources), func(sourceNum int) (SourceGetter, error) {
-		return nil, nil //TODO
+		return sources[sourceNum], sources[sourceNum].SaveCustomValueTo(dest)
 	})
 }

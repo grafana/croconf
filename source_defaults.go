@@ -29,4 +29,21 @@ func DefaultInt64Value(i int64) Int64ValueSource {
 	return defaultInt64Value(i)
 }
 
+type defaultCustomValue struct {
+	value CustomValue
+}
+
+func (dcv defaultCustomValue) SaveCustomValueTo(dest CustomValue) error {
+	dest = dcv.value
+	return nil
+}
+
+func (dcv defaultCustomValue) GetSource() Source {
+	return nil
+}
+
+func DefaultCustomValue(val CustomValue) CustomValueSource {
+	return defaultCustomValue{value: val}
+}
+
 //TODO: sources for the rest of the types

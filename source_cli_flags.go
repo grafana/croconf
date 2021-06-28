@@ -44,3 +44,7 @@ func (cb *cliBinding) SaveStringTo(dest *string) error {
 func (cb *cliBinding) SaveInt64To(dest *int64) error {
 	return ErrorMissing // TODO: implement
 }
+
+func (cb *cliBinding) SaveCustomValueTo(dest CustomValue) error {
+	return ErrorMissing // TODO: implement
+}

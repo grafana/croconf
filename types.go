@@ -1,5 +1,7 @@
 package croconf
 
+import "encoding/json"
+
 type Field interface {
 	Consolidate() []error
 	HasBeenSet() bool
@@ -35,6 +37,7 @@ type LazySingleValueBinding interface {
 		...
 	*/
 	Int64ValueSource
+	CustomValueSource
 }
 
 type StringValueSource interface {
@@ -44,6 +47,15 @@ type StringValueSource interface {
 
 type Int64ValueSource interface {
 	SourceGetter
-	GetSource() Source
 	SaveInt64To(dest *int64) error
+}
+
+type CustomValue interface {
+	json.Unmarshaler
+	ParseFromString(string) error
+}
+
+type CustomValueSource interface {
+	SourceGetter
+	SaveCustomValueTo(dest CustomValue) error
 }

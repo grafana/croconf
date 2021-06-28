@@ -59,6 +59,7 @@ func (d *Duration) UnmarshalText(data []byte) error {
 }
 
 // UnmarshalJSON converts JSON data to Duration
+// and implements croconf.CustomValue interface
 func (d *Duration) UnmarshalJSON(data []byte) error {
 	if len(data) > 0 && data[0] == '"' {
 		var str string
@@ -78,5 +79,16 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("'%s' is not a valid duration value", string(data))
 	}
 
+	return nil
+}
+
+// ParseFromString implements croconf.CustomValue interface
+func (d *Duration) ParseFromString(data string) error {
+	duration, err := ParseExtendedDuration(data)
+	if err != nil {
+		return err
+	}
+
+	*d = Duration(duration)
 	return nil
 }

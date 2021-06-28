@@ -1,6 +1,8 @@
 package main
 
-import "go.k6.io/croconf"
+import (
+	"go.k6.io/croconf"
+)
 
 type ScriptConfig struct {
 	cm *croconf.Manager
@@ -53,6 +55,18 @@ func NewScriptConfig(
 			cliSource.FromNameAndShorthand("--duration", "-d"),
 		))
 	*/
+
+	// defaultDuration := Duration(time.Second)
+
+	cm.AddField(
+		croconf.NewCustomField(
+			&conf.Duration,
+			// croconf.DefaultCustomValue(&defaultDuration),
+			jsonSource.From("duration"),
+			envVarsSource.From("K6_DURATION"),
+			// cliSource.FromNameAndShorthand("--duration", "-d"),
+		),
+	)
 
 	// TODO: add the other options and actually process and consolidate the
 	// config values and handle any errors... Here we probably want to error out

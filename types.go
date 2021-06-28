@@ -35,6 +35,7 @@ type LazySingleValueBinding interface {
 		...
 	*/
 	Int64ValueSource
+	CustomValueSource
 }
 
 type StringValueSource interface {
@@ -46,4 +47,10 @@ type Int64ValueSource interface {
 	SourceGetter
 	GetSource() Source
 	SaveInt64To(dest *int64) error
+}
+
+type CustomValueSource interface {
+	SourceGetter
+	GetSource() Source
+	SaveCustomTo(dest interface{}) error
 }

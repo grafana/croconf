@@ -12,8 +12,7 @@ type SourceEnvVars struct {
 
 func NewSourceFromEnv(environ []string) *SourceEnvVars {
 	env := make(map[string]string, len(environ))
-	for _, kv := range environ {
-		k, v := parseEnvKeyValue(kv)
+	for _, kv := range environ { k, v := parseEnvKeyValue(kv)
 		env[k] = v
 	}
 	return &SourceEnvVars{env: env}
@@ -23,16 +22,18 @@ func (sev *SourceEnvVars) GetName() string {
 	return "environment variables" // TODO
 }
 
-func (sev *SourceEnvVars) From(name string) LazySingleValueBinding {
+func (sev *SourceEnvVars) From(name string, customfn func(v string, dest interface{}) error) LazySingleValueBinding {
 	return &envBinding{
 		source: sev,
 		name:   name,
+		customfn: customfn,
 	}
 }
 
 type envBinding struct {
 	source *SourceEnvVars
 	name   string
+	customfn func(v string, dest interface{}) error
 }
 
 func (eb *envBinding) GetSource() Source {
@@ -58,6 +59,19 @@ func (eb *envBinding) SaveInt64To(dest *int64) error {
 		return err
 	}
 	*dest = intVal
+	return nil
+}
+
+func (eb *envBinding) SaveCustomTo(dest interface{}) error {
+	val, ok := eb.source.env[eb.name]
+	if !ok {
+		return ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
+	}
+
+	err := eb.customfn(val, dest)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -28,16 +28,18 @@ func (sj *SourceJSON) GetName() string {
 	return "json"
 }
 
-func (sj *SourceJSON) From(name string) LazySingleValueBinding {
+func (sj *SourceJSON) From(name string, custom func(data []byte, v interface{}) error) LazySingleValueBinding {
 	return &jsonBinding{
 		source: sj,
 		name:   name,
+		customfn: custom,
 	}
 }
 
 type jsonBinding struct {
 	source *SourceJSON
 	name   string
+	customfn func([]byte, interface{}) error
 }
 
 func (jb *jsonBinding) GetSource() Source {
@@ -60,4 +62,14 @@ func (jb *jsonBinding) SaveInt64To(dest *int64) error {
 	}
 
 	return json.Unmarshal(raw, dest) // TODO: less reflection, better error messages
+}
+
+
+func (jb *jsonBinding) SaveCustomTo(dest interface{}) error {
+	raw, ok := jb.source.fields[jb.name]
+	if !ok {
+		return ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
+	}
+
+	return jb.customfn(raw, dest)
 }

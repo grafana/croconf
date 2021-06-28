@@ -1,15 +1,42 @@
-package main
+package duration
 
 import (
 	"fmt"
+	"time"
 	"strconv"
 	"strings"
-	"time"
 )
 
+type Duration time.Duration
 
-// ParseExtendedDuration is a helper function that allows for string duration
-// values containing days.
+func FromJSON(raw []byte, v interface{}) error {
+	dv, ok := v.(*Duration)
+	if !ok {
+		return fmt.Errorf("v is not a Duration")
+	}
+	inner, err := ParseExtendedDuration(string(raw))
+	if err != nil {
+		return  err
+	}
+	*dv = Duration(inner)
+	v = dv
+	return nil
+}
+
+func FromEnv(raw string, v interface{}) error {
+	dv, ok := v.(*Duration)
+	if !ok {
+		return fmt.Errorf("v is not a Duration")
+	}
+	inner, err := ParseExtendedDuration(raw)
+	if err != nil {
+		return  err
+	}
+	*dv = Duration(inner)
+	v = dv
+	return nil
+}
+
 func ParseExtendedDuration(data string) (result time.Duration, err error) {
 	// Assume millisecond values if data is provided with no units
 	if t, errp := strconv.ParseFloat(data, 64); errp == nil {

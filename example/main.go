@@ -47,7 +47,7 @@ func runCommand(
 
 	scriptConf, err := NewScriptConfig(globalConf, cliSource, envVarsSource, jsonSource)
 	if err != nil {
-		// TODO: handle error
+		log.Fatal(err)
 	}
 
 	// And finally, we should be able to marshal and dump the consolidated config

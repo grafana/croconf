@@ -5,15 +5,36 @@ import (
 	"errors"
 )
 
+type valueBinding struct {
+	sourceGetter SourceGetter
+	apply        func() error
+}
+
+func vb(sg SourceGetter, apply func() error) valueBinding {
+	return valueBinding{sourceGetter: sg, apply: apply}
+}
+
 type field struct {
-	hasBeenSet  bool
-	source      Source
-	consolidate func() []error
-	destination interface{}
+	hasBeenSet    bool
+	source        Source
+	destination   interface{}
+	valueBindings []valueBinding
 }
 
 func (f *field) Consolidate() []error {
-	return f.consolidate()
+	var errs []error
+	for _, vb := range f.valueBindings {
+		err := vb.apply()
+		if err == nil {
+			f.source = vb.sourceGetter.GetSource()
+			if f.source != nil {
+				f.hasBeenSet = true
+			}
+		} else if !errors.Is(ErrorMissing, err) {
+			errs = append(errs, err)
+		}
+	}
+	return errs
 }
 
 func (f *field) HasBeenSet() bool {
@@ -28,43 +49,38 @@ func (f *field) Destination() interface{} {
 	return f.destination
 }
 
-func newField(dest interface{}, sourcesLen int, callback func(sourceNum int) (SourceGetter, error)) *field {
-	// TODO: figure out some way to improve this?
-	f := &field{destination: dest}
-	f.consolidate = func() []error {
-		var errs []error
-		for i := 0; i < sourcesLen; i++ {
-			sourceGetter, err := callback(i)
-			if err == nil {
-				f.source = sourceGetter.GetSource()
-				if f.source != nil {
-					f.hasBeenSet = true
-				}
-			} else if !errors.Is(ErrorMissing, err) {
-				errs = append(errs, err)
-			}
-		}
-		return errs
+func newField(dest interface{}, sourcesLen int, callback func(sourceNum int) valueBinding) *field {
+	f := &field{
+		destination:   dest,
+		valueBindings: make([]valueBinding, sourcesLen),
 	}
+	for i := 0; i < sourcesLen; i++ {
+		f.valueBindings[i] = callback(i)
+	}
+
 	return f
 }
 
-func NewInt64Field(dest *int64, sources ...Int64ValueSource) Field {
-	//
-
-	return newField(dest, len(sources), func(sourceNum int) (SourceGetter, error) {
-		return sources[sourceNum], sources[sourceNum].SaveInt64To(dest)
+func NewInt64Field(dest *int64, sources ...Int64ValueBinding) Field {
+	return newField(dest, len(sources), func(sourceNum int) valueBinding {
+		return vb(sources[sourceNum], sources[sourceNum].BindInt64ValueTo(dest))
 	})
 }
 
-func NewStringField(dest *string, sources ...StringValueSource) Field {
-	return newField(dest, len(sources), func(sourceNum int) (SourceGetter, error) {
-		return sources[sourceNum], sources[sourceNum].SaveStringTo(dest)
+func NewStringField(dest *string, sources ...StringValueBinding) Field {
+	return newField(dest, len(sources), func(sourceNum int) valueBinding {
+		return vb(sources[sourceNum], sources[sourceNum].BindStringValueTo(dest))
 	})
 }
 
-func NewCustomField(dest encoding.TextUnmarshaler, sources ...interface{}) Field {
-	return newField(dest, len(sources), func(sourceNum int) (SourceGetter, error) {
-		return nil, nil //TODO
+func NewTextBasedField(dest encoding.TextUnmarshaler, sources ...TextBasedValueBinding) Field {
+	return newField(dest, len(sources), func(sourceNum int) valueBinding {
+		return vb(sources[sourceNum], sources[sourceNum].BindTextBasedValueTo(dest))
+	})
+}
+
+func NewCustomField(dest interface{}, sources ...CustomValueBinding) Field {
+	return newField(dest, len(sources), func(sourceNum int) valueBinding {
+		return vb(sources[sourceNum], sources[sourceNum].BindValue())
 	})
 }

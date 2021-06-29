@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	cliSource := croconf.NewSourceFromCLIFlags(os.Args)
+	cliSource := croconf.NewSourceFromCLIFlags(os.Args[1:])
 	envVarsSource := croconf.NewSourceFromEnv(os.Environ())
 
 	globalConf, err := NewGlobalConfig(cliSource, envVarsSource)
@@ -26,8 +26,10 @@ func main() {
 	// to handle things like --help
 
 	// TODO: obviosuly something better
-	if globalConf.SubCommand == "run" || true /* TODO: remove after we actually populate the option */ {
+	if globalConf.SubCommand == "run" {
 		runCommand(cliSource, envVarsSource, globalConf)
+	} else {
+		log.Fatalf("unknown sub-command %s", globalConf.SubCommand)
 	}
 }
 
@@ -37,8 +39,15 @@ func runCommand(
 	globalConf *GlobalConfig,
 ) {
 	jsonConfigContents, err := ioutil.ReadFile(globalConf.JSONConfigPath)
-	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		log.Fatal(err)
+	if err != nil {
+		if globalConf.cm.Field(&globalConf.JSONConfigPath).HasBeenSet() {
+			// If this was explicitly set, treat any failure to open it as a fatal error
+			log.Fatal(err)
+		}
+		if !errors.Is(err, fs.ErrNotExist) {
+			// if we're using the default log config location, warn on any errors except "file not found"
+			log.Printf("warning! could not open config.json file: %s", err)
+		}
 	}
 	jsonSource, err := croconf.NewJSONSource(jsonConfigContents)
 	if err != nil {

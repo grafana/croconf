@@ -80,3 +80,8 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
+
+// MarshalJSON returns the JSON representation of d
+func (d Duration) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.String())
+}

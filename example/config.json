@@ -1,7 +1,7 @@
 {
     "vus": 4,
     "userAgent": "test",
-    "duration": "1s",
+    "duration": "15s",
     "stages": [
         {
             "duration": "1s",
@@ -11,5 +11,13 @@
             "duration": "1s",
             "target": 123
         }
-    ]
+    ],
+    "scenarios": {
+        "contacts": {
+            "executor": "constant-vus",
+            "exec": "contacts",
+            "vus": 50,
+            "duration": "30s"
+        }
+    }
 }

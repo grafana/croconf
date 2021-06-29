@@ -54,3 +54,8 @@ type TextBasedValueBinding interface {
 	SourceGetter
 	BindTextBasedValueTo(dest encoding.TextUnmarshaler) func() error
 }
+
+type CustomValueBinding interface {
+	SourceGetter
+	BindValue() func() error
+}

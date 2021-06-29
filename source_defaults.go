@@ -46,4 +46,16 @@ func DefaultInt64Value(i int64) Int64ValueBinding {
 	return defaultInt64Value(i)
 }
 
+type DefaultCustomValue func()
+
+func (dcv DefaultCustomValue) GetSource() Source {
+	return nil
+}
+func (dcv DefaultCustomValue) BindValue() func() error {
+	return func() error {
+		dcv()
+		return nil
+	}
+}
+
 //TODO: sources for the rest of the types

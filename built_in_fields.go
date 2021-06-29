@@ -78,3 +78,9 @@ func NewTextBasedField(dest encoding.TextUnmarshaler, sources ...TextBasedValueB
 		return vb(sources[sourceNum], sources[sourceNum].BindTextBasedValueTo(dest))
 	})
 }
+
+func NewCustomField(dest interface{}, sources ...CustomValueBinding) Field {
+	return newField(dest, len(sources), func(sourceNum int) valueBinding {
+		return vb(sources[sourceNum], sources[sourceNum].BindValue())
+	})
+}

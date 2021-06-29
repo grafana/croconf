@@ -30,7 +30,7 @@ func (sj *SourceJSON) GetName() string {
 	return "json"
 }
 
-func (sj *SourceJSON) From(name string) LazySingleValueBinding {
+func (sj *SourceJSON) From(name string) *jsonBinding {
 	return &jsonBinding{
 		source: sj,
 		name:   name,
@@ -88,5 +88,25 @@ func (jb *jsonBinding) BindTextBasedValueTo(dest encoding.TextUnmarshaler) func(
 		}
 
 		return dest.UnmarshalText(raw[1 : rawLen-1])
+	}
+}
+
+func (jb *jsonBinding) To(dest json.Unmarshaler) *jsonBindingWithDest {
+	return &jsonBindingWithDest{jsonBinding: jb, dest: dest}
+}
+
+type jsonBindingWithDest struct {
+	*jsonBinding
+	dest json.Unmarshaler
+}
+
+func (jbd *jsonBindingWithDest) BindValue() func() error {
+	return func() error {
+		raw, ok := jbd.source.fields[jbd.name]
+		if !ok {
+			return ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
+		}
+
+		return jbd.dest.UnmarshalJSON(raw)
 	}
 }

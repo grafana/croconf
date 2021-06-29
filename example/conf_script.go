@@ -2,6 +2,8 @@ package main
 
 import (
 	"go.k6.io/croconf"
+	"go.k6.io/k6/lib"
+	"go.k6.io/k6/lib/executor"
 )
 
 type ScriptConfig struct {
@@ -12,6 +14,8 @@ type ScriptConfig struct {
 	VUs       int64
 
 	Duration Duration
+
+	Scenarios lib.ScenarioConfigs
 
 	// TODO: have a sub-config
 }
@@ -52,6 +56,16 @@ func NewScriptConfig(
 		jsonSource.From("duration"),
 		envVarsSource.From("K6_DURATION"),
 		cliSource.FromNameAndShorthand("duration", "d"),
+	))
+
+	cm.AddField(croconf.NewCustomField(
+		&conf.Scenarios,
+		croconf.DefaultCustomValue(func() {
+			conf.Scenarios = lib.ScenarioConfigs{
+				lib.DefaultScenarioName: executor.NewPerVUIterationsConfig(lib.DefaultScenarioName),
+			}
+		}),
+		jsonSource.From("scenarios").To(&conf.Scenarios),
 	))
 
 	// TODO: add the other options and actually process and consolidate the

@@ -25,7 +25,7 @@ func NewGlobalConfig(
 		croconf.NewStringField(
 			&conf.SubCommand,
 			croconf.DefaultStringValue("run"),
-			//cliSource.FromPositionalArg(1),
+			cliSource.FromPositionalArg(1),
 		),
 		/*
 			croconf.IsRequired(),
@@ -44,7 +44,7 @@ func NewGlobalConfig(
 			&conf.JSONConfigPath,
 			croconf.DefaultStringValue("./config.json"),
 			envVarsSource.From("K6_CONFIG"),
-			cliSource.FromNameAndShorthand("--config", "-c"),
+			cliSource.FromNameAndShorthand("config", "c"),
 		),
 		/*
 			croconf.WithDescription("path to k6 JSON config file"),
@@ -58,6 +58,11 @@ func NewGlobalConfig(
 	)
 
 	// TODO: add the other options and properties
+
+	// TODO: automatically do this on Consolidate()?
+	if err := cliSource.Parse(); err != nil {
+		return nil, err
+	}
 
 	if err := cm.Consolidate(); err != nil {
 		return nil, err

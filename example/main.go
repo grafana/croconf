@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	cliSource := croconf.NewSourceFromCLIFlags(os.Args)
+	cliSource := croconf.NewSourceFromCLIFlags(os.Args[1:])
 	envVarsSource := croconf.NewSourceFromEnv(os.Environ())
 
 	globalConf, err := NewGlobalConfig(cliSource, envVarsSource)
@@ -26,8 +26,10 @@ func main() {
 	// to handle things like --help
 
 	// TODO: obviosuly something better
-	if globalConf.SubCommand == "run" || true /* TODO: remove after we actually populate the option */ {
+	if globalConf.SubCommand == "run" {
 		runCommand(cliSource, envVarsSource, globalConf)
+	} else {
+		log.Fatalf("unknown sub-command %s", globalConf.SubCommand)
 	}
 }
 

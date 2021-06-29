@@ -39,8 +39,15 @@ func runCommand(
 	globalConf *GlobalConfig,
 ) {
 	jsonConfigContents, err := ioutil.ReadFile(globalConf.JSONConfigPath)
-	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		log.Fatal(err)
+	if err != nil {
+		if globalConf.cm.Field(&globalConf.JSONConfigPath).HasBeenSet() {
+			// If this was explicitly set, treat any failure to open it as a fatal error
+			log.Fatal(err)
+		}
+		if !errors.Is(err, fs.ErrNotExist) {
+			// if we're using the default log config location, warn on any errors except "file not found"
+			log.Printf("warning! could not open config.json file: %s", err)
+		}
 	}
 	jsonSource, err := croconf.NewJSONSource(jsonConfigContents)
 	if err != nil {

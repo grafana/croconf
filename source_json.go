@@ -44,20 +44,24 @@ func (jb *jsonBinding) GetSource() Source {
 	return jb.source
 }
 
-func (jb *jsonBinding) SaveStringTo(dest *string) error {
-	raw, ok := jb.source.fields[jb.name]
-	if !ok {
-		return ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
-	}
+func (jb *jsonBinding) BindStringValueTo(dest *string) func() error {
+	return func() error {
+		raw, ok := jb.source.fields[jb.name]
+		if !ok {
+			return ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
+		}
 
-	return json.Unmarshal(raw, dest) // TODO: less reflection, better error messages
+		return json.Unmarshal(raw, dest) // TODO: less reflection, better error messages
+	}
 }
 
-func (jb *jsonBinding) SaveInt64To(dest *int64) error {
-	raw, ok := jb.source.fields[jb.name]
-	if !ok {
-		return ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
-	}
+func (jb *jsonBinding) BindInt64ValueTo(dest *int64) func() error {
+	return func() error {
+		raw, ok := jb.source.fields[jb.name]
+		if !ok {
+			return ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
+		}
 
-	return json.Unmarshal(raw, dest) // TODO: less reflection, better error messages
+		return json.Unmarshal(raw, dest) // TODO: less reflection, better error messages
+	}
 }

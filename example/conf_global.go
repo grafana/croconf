@@ -42,7 +42,7 @@ func NewGlobalConfig(
 	cm.AddField(
 		croconf.NewStringField(
 			&conf.JSONConfigPath,
-			croconf.DefaultStringValue("~/.config/loadimpact/k6/config.json"),
+			croconf.DefaultStringValue("./config.json"),
 			envVarsSource.From("K6_CONFIG"),
 			cliSource.FromNameAndShorthand("--config", "-c"),
 		),

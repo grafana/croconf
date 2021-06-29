@@ -37,10 +37,14 @@ func (cb *cliBinding) GetSource() Source {
 	return cb.source
 }
 
-func (cb *cliBinding) SaveStringTo(dest *string) error {
-	return ErrorMissing // TODO: implement
+func (cb *cliBinding) BindStringValueTo(dest *string) func() error {
+	return func() error {
+		return ErrorMissing // TODO: implement
+	}
 }
 
-func (cb *cliBinding) SaveInt64To(dest *int64) error {
-	return ErrorMissing // TODO: implement
+func (cb *cliBinding) BindInt64ValueTo(dest *int64) func() error {
+	return func() error {
+		return ErrorMissing // TODO: implement
+	}
 }

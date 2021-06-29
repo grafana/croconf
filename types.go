@@ -20,30 +20,29 @@ type SourceGetter interface {
 
 type LazySingleValueBinding interface {
 	SourceGetter
-	StringValueSource
+	StringValueBinding
 	// TODO: all all other types
 	/*
-		UintValueSource
-		Uint8ValueSource
-		Uint16ValueSource
-		Uint32ValueSource
-		Uint64ValueSource
-		IntValueSource
-		Int8ValueSource
-		Int16ValueSource
-		Int32ValueSource
+		UintValueBinding
+		Uint8ValueBinding
+		Uint16ValueBinding
+		Uint32ValueBinding
+		Uint64ValueBinding
+		IntValueBinding
+		Int8ValueBinding
+		Int16ValueBinding
+		Int32ValueBinding
 		...
 	*/
-	Int64ValueSource
+	Int64ValueBinding
 }
 
-type StringValueSource interface {
+type StringValueBinding interface {
 	SourceGetter
-	SaveStringTo(dest *string) error
+	BindStringValueTo(dest *string) func() error
 }
 
-type Int64ValueSource interface {
+type Int64ValueBinding interface {
 	SourceGetter
-	GetSource() Source
-	SaveInt64To(dest *int64) error
+	BindInt64ValueTo(dest *int64) func() error
 }

@@ -1,6 +1,8 @@
 package main
 
-import "go.k6.io/croconf"
+import (
+	"go.k6.io/croconf"
+)
 
 type ScriptConfig struct {
 	cm *croconf.Manager

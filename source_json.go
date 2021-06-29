@@ -3,6 +3,7 @@ package croconf
 import (
 	"encoding"
 	"encoding/json"
+	"fmt"
 )
 
 type SourceJSON struct {
@@ -81,6 +82,11 @@ func (jb *jsonBinding) BindTextBasedValueTo(dest encoding.TextUnmarshaler) func(
 			return jum.UnmarshalJSON(raw)
 		}
 
-		return dest.UnmarshalText(raw)
+		rawLen := len(raw)
+		if rawLen < 2 || raw[0] != '"' || raw[rawLen-1] != '"' {
+			return fmt.Errorf("expected a string when parsing JSON value for %s, got '%s'", jb.name, string(raw))
+		}
+
+		return dest.UnmarshalText(raw[1 : rawLen-1])
 	}
 }

@@ -57,5 +57,5 @@ type TextBasedValueBinding interface {
 
 type CustomValueBinding interface {
 	SourceGetter
-	BindValue() func() error
+	BindValue(dest interface{}) func() error
 }

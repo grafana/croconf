@@ -51,7 +51,7 @@ type DefaultCustomValue func()
 func (dcv DefaultCustomValue) GetSource() Source {
 	return nil
 }
-func (dcv DefaultCustomValue) BindValue() func() error {
+func (dcv DefaultCustomValue) BindValue(dest interface{}) func() error {
 	return func() error {
 		dcv()
 		return nil

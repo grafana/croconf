@@ -24,7 +24,7 @@ func (sev *SourceEnvVars) GetName() string {
 	return "environment variables" // TODO
 }
 
-func (sev *SourceEnvVars) From(name string) LazySingleValueBinding {
+func (sev *SourceEnvVars) From(name string) *envBinding {
 	return &envBinding{
 		source: sev,
 		name:   name,
@@ -74,6 +74,21 @@ func (eb *envBinding) BindTextBasedValueTo(dest encoding.TextUnmarshaler) func()
 		}
 
 		return dest.UnmarshalText([]byte(val))
+	}
+}
+
+func (eb *envBinding) BindValue(dest interface{}) func() error {
+	// TODO: call the text binder insted to re-write the logic
+	return func() error {
+		val, ok := eb.source.env[eb.name]
+		if !ok {
+			return ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
+		}
+		tdest, ok := dest.(encoding.TextUnmarshaler)
+		if !ok {
+			return ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
+		}
+		return tdest.UnmarshalText([]byte(val))
 	}
 }
 

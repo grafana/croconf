@@ -35,7 +35,7 @@ func (sc *SourceCLI) FromName(name string) LazySingleValueBinding {
 	return &cliBinding{source: sc, longhand: name}
 }
 
-func (sc *SourceCLI) FromNameAndShorthand(name, shorthand string) LazySingleValueBinding {
+func (sc *SourceCLI) FromNameAndShorthand(name, shorthand string) *cliBinding {
 	return &cliBinding{source: sc, longhand: name, shorthand: shorthand}
 }
 
@@ -98,3 +98,10 @@ func (cb *cliBinding) BindInt64ValueTo(dest *int64) func() error {
 		return nil
 	})
 }
+
+func (cb *cliBinding) BindValue(dest interface{}) func() error {
+	return func() error {
+		panic("not yet implemented")
+	}
+}
+

@@ -50,12 +50,12 @@ func NewScriptConfig(
 		// croconf.WithDescription("number of virtual users") // TODO
 	))
 
-	cm.AddField(croconf.NewTextBasedField(
+	cm.AddField(croconf.NewCustomField(
 		&conf.Duration,
-		croconf.DefaultStringValue("1s"),
+		//croconf.DefaultStringValue("1s"),
 		jsonSource.From("duration"),
 		envVarsSource.From("K6_DURATION"),
-		cliSource.FromNameAndShorthand("duration", "d"),
+		//cliSource.FromNameAndShorthand("duration", "d"),
 	))
 
 	cm.AddField(croconf.NewCustomField(
@@ -65,7 +65,8 @@ func NewScriptConfig(
 				lib.DefaultScenarioName: executor.NewPerVUIterationsConfig(lib.DefaultScenarioName),
 			}
 		}),
-		jsonSource.From("scenarios").To(&conf.Scenarios),
+		jsonSource.From("scenarios"),
+		//jsonSource.From("scenarios"jj).To(&conf.Scenarios),
 	))
 
 	// TODO: add the other options and actually process and consolidate the

@@ -91,22 +91,39 @@ func (jb *jsonBinding) BindTextBasedValueTo(dest encoding.TextUnmarshaler) func(
 	}
 }
 
-func (jb *jsonBinding) To(dest json.Unmarshaler) *jsonBindingWithDest {
-	return &jsonBindingWithDest{jsonBinding: jb, dest: dest}
-}
-
-type jsonBindingWithDest struct {
-	*jsonBinding
-	dest json.Unmarshaler
-}
-
-func (jbd *jsonBindingWithDest) BindValue() func() error {
+func (jb *jsonBinding) BindValue(dest interface{}) func() error {
 	return func() error {
-		raw, ok := jbd.source.fields[jbd.name]
+		raw, ok := jb.source.fields[jb.name]
 		if !ok {
 			return ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
 		}
-
-		return jbd.dest.UnmarshalJSON(raw)
+		tdest, ok := dest.(json.Unmarshaler)
+		if !ok {
+			return json.Unmarshal(raw, dest)
+		}
+		return tdest.UnmarshalJSON(raw)
 	}
 }
+
+//func (jb *jsonBinding) To(dest json.Unmarshaler) *jsonBindingWithDest {
+	//return &jsonBindingWithDest{jsonBinding: jb, dest: dest}
+//}
+
+//type jsonBindingWithDest struct {
+	//*jsonBinding
+	//dest json.Unmarshaler
+//}
+
+//func (jbd *jsonBindingWithDest) BindValue(dest interface{}) func() error {
+	//return func() error {
+		//raw, ok := jbd.source.fields[jbd.name]
+		//if !ok {
+			//return ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
+		//}
+		//tdest, ok := dest.(json.Unmarshaler)
+		//if !ok {
+			//return json.Unmarshal(raw, dest)
+		//}
+		//return tdest.UnmarshalJSON(raw)
+	//}
+//}

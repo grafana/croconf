@@ -40,7 +40,7 @@ func runCommand(
 ) {
 	jsonConfigContents, err := ioutil.ReadFile(globalConf.JSONConfigPath)
 	if err != nil {
-		if globalConf.cm.Field(&globalConf.JSONConfigPath).HasBeenSet() {
+		if globalConf.cm.Field(&globalConf.JSONConfigPath).ValueSource() != nil {
 			// If this was explicitly set, treat any failure to open it as a fatal error
 			log.Fatal(err)
 		}
@@ -62,16 +62,34 @@ func runCommand(
 	// And finally, we should be able to marshal and dump the consolidated config
 	jsonResult, err := json.Marshal(scriptConf)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	fmt.Println(string(jsonResult))
 
 	fmt.Println()
 
-	vusMeta := scriptConf.cm.Field(&scriptConf.VUs)
-	if vusMeta.HasBeenSet() {
-		fmt.Printf("Field VUs was manually set by source '%s'\n", vusMeta.SourceOfValue().GetName())
+	dumpField(scriptConf.cm, &scriptConf.VUs, "VUs")
+	dumpField(scriptConf.cm, &scriptConf.Scenarios1, "Scenarios1")
+	dumpField(scriptConf.cm, &scriptConf.Scenarios2, "Scenarios2")
+}
+
+func dumpField(cm *croconf.Manager, field interface{}, fieldName string) {
+	// TODO: get the name from the field?
+	jsonResult, err := json.Marshal(field)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fieldMeta := cm.Field(field)
+	if source := fieldMeta.ValueSource(); source != nil {
+		fmt.Printf(
+			"Field %s was manually set by source '%s' with value '%s'\n",
+			fieldName, source.GetName(), jsonResult,
+		)
 	} else {
-		fmt.Printf("Field VUs was using the default value\n")
+		fmt.Printf(
+			"Field %s was using the default value of '%s'\n",
+			fieldName, jsonResult,
+		)
 	}
 }

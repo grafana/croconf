@@ -15,7 +15,6 @@ func vb(sg SourceGetter, apply func() error) valueBinding {
 }
 
 type field struct {
-	hasBeenSet    bool
 	source        Source
 	destination   interface{}
 	valueBindings []valueBinding
@@ -27,9 +26,6 @@ func (f *field) Consolidate() []error {
 		err := vb.apply()
 		if err == nil {
 			f.source = vb.sourceGetter.GetSource()
-			if f.source != nil {
-				f.hasBeenSet = true
-			}
 		} else if !errors.Is(ErrorMissing, err) {
 			errs = append(errs, err)
 		}
@@ -37,11 +33,7 @@ func (f *field) Consolidate() []error {
 	return errs
 }
 
-func (f *field) HasBeenSet() bool {
-	return f.hasBeenSet
-}
-
-func (f *field) SourceOfValue() Source {
+func (f *field) ValueSource() Source {
 	return f.source
 }
 

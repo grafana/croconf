@@ -15,7 +15,9 @@ type ScriptConfig struct {
 
 	Duration Duration
 
-	Scenarios lib.ScenarioConfigs
+	Scenarios1 lib.ScenarioConfigs
+
+	Scenarios2 lib.ScenarioConfigs
 
 	// TODO: have a sub-config
 }
@@ -58,15 +60,18 @@ func NewScriptConfig(
 		cliSource.FromNameAndShorthand("duration", "d"),
 	))
 
+	// This is one way to add a custom field in a type-safe manner:
 	cm.AddField(croconf.NewCustomField(
-		&conf.Scenarios,
+		&conf.Scenarios1,
 		croconf.DefaultCustomValue(func() {
-			conf.Scenarios = lib.ScenarioConfigs{
+			conf.Scenarios1 = lib.ScenarioConfigs{
 				lib.DefaultScenarioName: executor.NewPerVUIterationsConfig(lib.DefaultScenarioName),
 			}
 		}),
-		jsonSource.From("scenarios").To(&conf.Scenarios),
+		jsonSource.From("scenarios1").To(&conf.Scenarios1),
 	))
+	// This is another way to do it, with a small custom type:
+	cm.AddField(&scenariosField{dest: &conf.Scenarios2, source: jsonSource, id: "scenarios2"})
 
 	// TODO: add the other options and actually process and consolidate the
 	// config values and handle any errors... Here we probably want to error out
@@ -82,4 +87,38 @@ func NewScriptConfig(
 	}
 
 	return conf, nil
+}
+
+type scenariosField struct {
+	dest   *lib.ScenarioConfigs
+	source *croconf.SourceJSON
+	id     string
+	wasSet bool
+}
+
+func (sf *scenariosField) Destination() interface{} {
+	return sf.dest
+}
+
+func (sf *scenariosField) Consolidate() []error {
+	*sf.dest = lib.ScenarioConfigs{
+		lib.DefaultScenarioName: executor.NewPerVUIterationsConfig(lib.DefaultScenarioName),
+	}
+
+	jsonVal, ok := sf.source.Lookup(sf.id)
+	if !ok {
+		return nil
+	}
+
+	if err := sf.dest.UnmarshalJSON(jsonVal); err != nil {
+		return []error{err}
+	}
+
+	return nil
+}
+func (sf *scenariosField) ValueSource() croconf.Source {
+	if sf.wasSet {
+		return sf.source
+	}
+	return nil
 }

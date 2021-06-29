@@ -12,12 +12,20 @@
             "target": 123
         }
     ],
-    "scenarios": {
+    "scenarios1": {
         "contacts": {
             "executor": "constant-vus",
             "exec": "contacts",
             "vus": 50,
             "duration": "30s"
+        }
+    },
+    "scenarios2": {
+        "contacts": {
+            "executor": "shared-iterations",
+            "exec": "test",
+            "vus": 50,
+            "iterations": 200
         }
     }
 }

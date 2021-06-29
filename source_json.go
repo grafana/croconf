@@ -30,6 +30,11 @@ func (sj *SourceJSON) GetName() string {
 	return "json"
 }
 
+func (sj *SourceJSON) Lookup(name string) (json.RawMessage, bool) {
+	res, ok := sj.fields[name]
+	return res, ok
+}
+
 func (sj *SourceJSON) From(name string) *jsonBinding {
 	return &jsonBinding{
 		source: sj,

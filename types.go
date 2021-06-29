@@ -4,8 +4,7 @@ import "encoding"
 
 type Field interface {
 	Consolidate() []error
-	HasBeenSet() bool
-	SourceOfValue() Source
+	ValueSource() Source // nil for default value
 	Destination() interface{}
 }
 

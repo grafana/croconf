@@ -48,6 +48,7 @@ A flexible and composable configuration library for Go that doesn't suck
 1. Write a PoC with some tests and mock real-life usage examples
 2. Iterate and expand on :arrow_up:
 3. Support all types (incl. custom types) and multiple sources
-4. Polish, set up GitHub Actions CI, etc.
+4. Figure out an appropriate Go module structure
+5. Polish, set up GitHub Actions CI, etc.
 5. Profit
 

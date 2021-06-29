@@ -1,6 +1,7 @@
 package croconf
 
 import (
+	"encoding"
 	"encoding/json"
 )
 
@@ -63,5 +64,23 @@ func (jb *jsonBinding) BindInt64ValueTo(dest *int64) func() error {
 		}
 
 		return json.Unmarshal(raw, dest) // TODO: less reflection, better error messages
+	}
+}
+
+func (jb *jsonBinding) BindTextBasedValueTo(dest encoding.TextUnmarshaler) func() error {
+	return func() error {
+		raw, ok := jb.source.fields[jb.name]
+		if !ok {
+			return ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
+		}
+
+		// Progressive enhancement ¯\_(ツ)_/¯ If the destination supports directly
+		// unmarshaling JSON, we should use that. Otherwise, we will fall back to
+		// the simple text unmarshaling we know we can rely on.
+		if jum, ok := dest.(json.Unmarshaler); ok {
+			return jum.UnmarshalJSON(raw)
+		}
+
+		return dest.UnmarshalText(raw)
 	}
 }

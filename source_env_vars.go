@@ -1,6 +1,7 @@
 package croconf
 
 import (
+	"encoding"
 	"strconv"
 	"strings"
 )
@@ -62,6 +63,17 @@ func (eb *envBinding) BindInt64ValueTo(dest *int64) func() error {
 		}
 		*dest = intVal
 		return nil
+	}
+}
+
+func (eb *envBinding) BindTextBasedValueTo(dest encoding.TextUnmarshaler) func() error {
+	return func() error {
+		val, ok := eb.source.env[eb.name]
+		if !ok {
+			return ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
+		}
+
+		return dest.UnmarshalText([]byte(val))
 	}
 }
 

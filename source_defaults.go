@@ -1,5 +1,7 @@
 package croconf
 
+import "encoding"
+
 // TODO: make more flexible with callbacks, so that besides defaut values, we
 // can use these for custom wrappers as well?
 
@@ -11,12 +13,20 @@ func (dsv defaultStringValue) BindStringValueTo(dest *string) func() error {
 		return nil
 	}
 }
+func (dsv defaultStringValue) BindTextBasedValueTo(dest encoding.TextUnmarshaler) func() error {
+	return func() error {
+		return dest.UnmarshalText([]byte(dsv))
+	}
+}
 
 func (dsv defaultStringValue) GetSource() Source {
 	return nil
 }
 
-func DefaultStringValue(s string) StringValueBinding {
+func DefaultStringValue(s string) interface {
+	StringValueBinding
+	TextBasedValueBinding
+} {
 	return defaultStringValue(s)
 }
 

@@ -46,15 +46,13 @@ func NewScriptConfig(
 		// croconf.WithDescription("number of virtual users") // TODO
 	))
 
-	/*
-		cm.AddField(croconf.NewCustomField(
-			&conf.Duration,
-			//croconf.DefaultInt64Value(),
-			jsonSource.From("duration"),
-			envVarsSource.From("K6_DURATION"),
-			cliSource.FromNameAndShorthand("--duration", "-d"),
-		))
-	*/
+	cm.AddField(croconf.NewTextBasedField(
+		&conf.Duration,
+		croconf.DefaultStringValue("1s"),
+		jsonSource.From("duration"),
+		envVarsSource.From("K6_DURATION"),
+		cliSource.FromNameAndShorthand("duration", "d"),
+	))
 
 	// TODO: add the other options and actually process and consolidate the
 	// config values and handle any errors... Here we probably want to error out

@@ -73,8 +73,8 @@ func NewStringField(dest *string, sources ...StringValueBinding) Field {
 	})
 }
 
-func NewCustomField(dest encoding.TextUnmarshaler, sources ...interface{}) Field {
+func NewTextBasedField(dest encoding.TextUnmarshaler, sources ...TextBasedValueBinding) Field {
 	return newField(dest, len(sources), func(sourceNum int) valueBinding {
-		return vb(nil, nil) //TODO
+		return vb(sources[sourceNum], sources[sourceNum].BindTextBasedValueTo(dest))
 	})
 }

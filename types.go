@@ -1,5 +1,7 @@
 package croconf
 
+import "encoding"
+
 type Field interface {
 	Consolidate() []error
 	HasBeenSet() bool
@@ -35,6 +37,7 @@ type LazySingleValueBinding interface {
 		...
 	*/
 	Int64ValueBinding
+	TextBasedValueBinding
 }
 
 type StringValueBinding interface {
@@ -45,4 +48,9 @@ type StringValueBinding interface {
 type Int64ValueBinding interface {
 	SourceGetter
 	BindInt64ValueTo(dest *int64) func() error
+}
+
+type TextBasedValueBinding interface {
+	SourceGetter
+	BindTextBasedValueTo(dest encoding.TextUnmarshaler) func() error
 }

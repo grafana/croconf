@@ -113,6 +113,7 @@ func (sf *scenariosField) Consolidate() []error {
 	if err := sf.dest.UnmarshalJSON(jsonVal); err != nil {
 		return []error{err}
 	}
+	sf.wasSet = true
 
 	return nil
 }

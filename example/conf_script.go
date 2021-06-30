@@ -15,6 +15,11 @@ type ScriptConfig struct {
 
 	Duration Duration
 
+	DNS struct {
+		TTL    Duration
+		Server string
+	}
+
 	Scenarios1 lib.ScenarioConfigs
 
 	Scenarios2 lib.ScenarioConfigs
@@ -62,6 +67,18 @@ func NewScriptConfig(
 		jsonSource.From("duration"),
 		envVarsSource.From("K6_DURATION"),
 		cliSource.FromNameAndShorthand("duration", "d"),
+	))
+
+	// Properties of a nested struct (without a pointer!)
+	cm.AddField(croconf.NewTextBasedField(
+		&conf.DNS.TTL,
+		croconf.DefaultStringValue("10m"),
+		jsonSource.From("dns").From("ttl"),
+	))
+	cm.AddField(croconf.NewStringField(
+		&conf.DNS.Server,
+		croconf.DefaultStringValue("8.8.8.8"),
+		jsonSource.From("dns").From("server"),
 	))
 
 	// This is one way to add a custom field in a type-safe manner:

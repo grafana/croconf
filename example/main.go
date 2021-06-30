@@ -57,7 +57,7 @@ func runCommand(
 	}
 
 	// And finally, we should be able to marshal and dump the consolidated config
-	jsonResult, err := json.Marshal(scriptConf)
+	jsonResult, err := json.MarshalIndent(scriptConf, "", "    ")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -68,6 +68,8 @@ func runCommand(
 	dumpField(scriptConf.cm, &scriptConf.VUs, "VUs")
 	dumpField(scriptConf.cm, &scriptConf.Scenarios1, "Scenarios1")
 	dumpField(scriptConf.cm, &scriptConf.Scenarios2, "Scenarios2")
+	dumpField(scriptConf.cm, &scriptConf.DNS.TTL, "DNS.TTL")
+	dumpField(scriptConf.cm, &scriptConf.DNS.Server, "DNS.Server")
 }
 
 //nolint:forbidigo

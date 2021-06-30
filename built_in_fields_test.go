@@ -101,6 +101,23 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 			// TODO: add more test cases for this field
 		},
 	},
+	{
+		name: "nested config",
+		field: func(sources testSources) Field {
+			var dest string
+			return NewStringField(
+				&dest,
+				sources.json.From("parent").From("child"),
+			)
+		},
+		testCases: []fieldTestCase{
+			{
+				json:          `{"parent": {"child": "data"}}`,
+				expectedValue: "data",
+			},
+			// TODO: add more test cases for this field?
+		},
+	},
 	// TODO: add a lot more like these...
 }
 

@@ -12,6 +12,10 @@
             "target": 123
         }
     ],
+    "dns": {
+        "ttl": "6500ms",
+        "server": "1.1.1.1"
+    },
     "scenarios1": {
         "contacts": {
             "executor": "ramping-vus",

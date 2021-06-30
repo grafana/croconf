@@ -29,6 +29,9 @@ func NewScriptConfig(
 	jsonSource *croconf.SourceJSON,
 ) (*ScriptConfig, error) {
 	cm := croconf.NewManager()
+	cm.AddSource(jsonSource)
+	cm.AddSource(envVarsSource)
+	cm.AddSource(cliSource)
 	conf := &ScriptConfig{GlobalConfig: globalConf, cm: cm} // TODO: somehow save the sources in the struct as well?
 
 	cm.AddField(
@@ -41,6 +44,7 @@ func NewScriptConfig(
 			// TODO: figure this out...
 			// croconf.WithDescription("user agent for http requests")
 		),
+		// ...
 	)
 
 	cm.AddField(croconf.NewInt64Field(
@@ -77,11 +81,6 @@ func NewScriptConfig(
 	// config values and handle any errors... Here we probably want to error out
 	// if we see unknown CLI flags or JSON options
 
-	// TODO: automatically do this on Consolidate()?
-	if err := cliSource.Parse(); err != nil {
-		return nil, err
-	}
-
 	if err := cm.Consolidate(); err != nil {
 		return nil, err
 	}
@@ -117,6 +116,7 @@ func (sf *scenariosField) Consolidate() []error {
 
 	return nil
 }
+
 func (sf *scenariosField) ValueSource() croconf.Source {
 	if sf.wasSet {
 		return sf.source

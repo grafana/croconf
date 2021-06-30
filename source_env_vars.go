@@ -20,6 +20,10 @@ func NewSourceFromEnv(environ []string) *SourceEnvVars {
 	return &SourceEnvVars{env: env}
 }
 
+func (sev *SourceEnvVars) Initialize() error {
+	return nil // TODO? maybe prefix handling?
+}
+
 func (sev *SourceEnvVars) GetName() string {
 	return "environment variables" // TODO
 }

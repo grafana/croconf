@@ -7,6 +7,7 @@ import (
 )
 
 type SourceJSON struct {
+	data   []byte
 	fields map[string]json.RawMessage
 	// TODO: I'm thinking that when this receives a JSON file, it should parse
 	// it to a map[string]json.RawMessage. Then, it can parse every
@@ -14,16 +15,21 @@ type SourceJSON struct {
 	// `name` (set in `From()` below)
 }
 
-func NewJSONSource(data []byte) (*SourceJSON, error) {
-	fields := make(map[string]json.RawMessage)
+func NewJSONSource(data []byte) *SourceJSON {
+	return &SourceJSON{
+		data:   data,
+		fields: make(map[string]json.RawMessage),
+	}
+}
 
-	if len(data) > 0 {
+func (sj *SourceJSON) Initialize() error {
+	if len(sj.data) > 0 {
 		// TODO: differentiate between an empty data and no data (nil)?
-		if err := json.Unmarshal(data, &fields); err != nil {
-			return nil, err
+		if err := json.Unmarshal(sj.data, &sj.fields); err != nil {
+			return err
 		}
 	}
-	return &SourceJSON{fields: fields}, nil
+	return nil
 }
 
 func (sj *SourceJSON) GetName() string {

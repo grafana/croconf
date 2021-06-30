@@ -13,6 +13,7 @@ func (dsv defaultStringValue) BindStringValueTo(dest *string) func() error {
 		return nil
 	}
 }
+
 func (dsv defaultStringValue) BindTextBasedValueTo(dest encoding.TextUnmarshaler) func() error {
 	return func() error {
 		return dest.UnmarshalText([]byte(dsv))
@@ -38,6 +39,7 @@ func (div defaultInt64Value) BindInt64ValueTo(dest *int64) func() error {
 		return nil
 	}
 }
+
 func (div defaultInt64Value) GetSource() Source {
 	return nil
 }
@@ -51,6 +53,7 @@ type DefaultCustomValue func()
 func (dcv DefaultCustomValue) GetSource() Source {
 	return nil
 }
+
 func (dcv DefaultCustomValue) BindValue() func() error {
 	return func() error {
 		dcv()
@@ -58,4 +61,4 @@ func (dcv DefaultCustomValue) BindValue() func() error {
 	}
 }
 
-//TODO: sources for the rest of the types
+// TODO: sources for the rest of the types

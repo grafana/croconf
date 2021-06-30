@@ -25,7 +25,7 @@ func main() {
 	// at least know which sub-command we need to execute, and we should be able
 	// to handle things like --help
 
-	// TODO: obviosuly something better
+	// TODO: obviously something better
 	if globalConf.SubCommand == "run" {
 		runCommand(cliSource, envVarsSource, globalConf)
 	} else {
@@ -33,6 +33,7 @@ func main() {
 	}
 }
 
+//nolint:forbidigo
 func runCommand(
 	cliSource *croconf.SourceCLI,
 	envVarsSource *croconf.SourceEnvVars,
@@ -49,11 +50,7 @@ func runCommand(
 			log.Printf("warning! could not open config.json file: %s", err)
 		}
 	}
-	jsonSource, err := croconf.NewJSONSource(jsonConfigContents)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	jsonSource := croconf.NewJSONSource(jsonConfigContents)
 	scriptConf, err := NewScriptConfig(globalConf, cliSource, envVarsSource, jsonSource)
 	if err != nil {
 		log.Fatal(err)
@@ -73,6 +70,7 @@ func runCommand(
 	dumpField(scriptConf.cm, &scriptConf.Scenarios2, "Scenarios2")
 }
 
+//nolint:forbidigo
 func dumpField(cm *croconf.Manager, field interface{}, fieldName string) {
 	// TODO: get the name from the field?
 	jsonResult, err := json.Marshal(field)

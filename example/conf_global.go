@@ -19,6 +19,8 @@ func NewGlobalConfig(
 	envVarsSource *croconf.SourceEnvVars,
 ) (*GlobalConfig, error) {
 	cm := croconf.NewManager()
+	cm.AddSource(envVarsSource)
+	cm.AddSource(cliSource)
 	conf := &GlobalConfig{cm: cm}
 
 	cm.AddField(
@@ -58,11 +60,6 @@ func NewGlobalConfig(
 	)
 
 	// TODO: add the other options and properties
-
-	// TODO: automatically do this on Consolidate()?
-	if err := cliSource.Parse(); err != nil {
-		return nil, err
-	}
 
 	if err := cm.Consolidate(); err != nil {
 		return nil, err

@@ -11,6 +11,7 @@ type Field interface {
 type FieldOption func(field Field) // TODO: do we need this?
 
 type Source interface {
+	Initialize() error
 	// TODO: figure out what to put here? and if we even need this :/
 	GetName() string
 }

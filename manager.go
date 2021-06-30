@@ -7,6 +7,7 @@ import (
 )
 
 type Manager struct {
+	sources      []Source
 	fields       []Field
 	fieldsByDest map[interface{}]Field
 	// TODO: internal data structure for tracking things
@@ -29,6 +30,10 @@ func (m *Manager) AddField(field Field, options ...FieldOption) {
 	m.fieldsByDest[field.Destination()] = field
 }
 
+func (m *Manager) AddSource(source Source) {
+	m.sources = append(m.sources, source)
+}
+
 func (m *Manager) Field(dest interface{}) Field {
 	return m.fieldsByDest[dest]
 }
@@ -36,11 +41,22 @@ func (m *Manager) Field(dest interface{}) Field {
 func (m *Manager) Consolidate() error {
 	var errs []error
 
+	for _, s := range m.sources {
+		err := s.Initialize()
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if len(errs) > 0 {
+		return consolidateErrorMessage(errs, "Config errors: ")
+	}
+
 	for _, f := range m.fields {
 		errs = append(errs, f.Consolidate()...)
 	}
 
-	return consolidateErrorMessage(errs, "Config errors: ")
+	return consolidateErrorMessage(errs, "Config value errors: ")
 }
 
 func consolidateErrorMessage(errList []error, title string) error {

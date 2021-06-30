@@ -23,7 +23,7 @@ func NewSourceFromCLIFlags(flags []string) *SourceCLI {
 	}
 }
 
-func (sc *SourceCLI) Parse() error {
+func (sc *SourceCLI) Initialize() error {
 	return sc.flagSet.Parse(sc.flags)
 }
 

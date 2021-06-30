@@ -14,10 +14,15 @@
     ],
     "scenarios1": {
         "contacts": {
-            "executor": "constant-vus",
+            "executor": "ramping-vus",
             "exec": "contacts",
-            "vus": 50,
-            "duration": "30s"
+            "startVUs": 50,
+            "stages": [
+                {
+                    "duration": "30s",
+                    "target": 123
+                }
+            ]
         }
     },
     "scenarios2": {

@@ -48,13 +48,6 @@ linters-settings:
   funlen:
     lines: 80
     statements: 60
-  goheader:
-    template-path: ".license-template"
-    values:
-      const:
-        year: 2021
-      regexp:
-        year-range: (\d\d\d\d|{{year}})
 
 linters:
   enable-all: true
@@ -75,5 +68,6 @@ linters:
   - maligned # replaced by govet 'fieldalignment'
   - interfacer # deprecated
   - scopelint # deprecated, replaced by exportloopref
-  - wrapcheck # a little bit too much for k6, maybe after https://github.com/tomarrell/wrapcheck/issues/2 is fixed
+  - golint # deprecated https://github.com/golang/go/issues/38968
+  - tagliatelle
   fast: false

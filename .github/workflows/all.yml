@@ -1,0 +1,52 @@
+name: CI
+on:
+  push:
+    branches:
+      - master
+
+    tags:
+      - v*
+
+  pull_request:
+
+env:
+  GOLANG_CI_VERSION: "1.41.1"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    continue-on-error: true #TODO: remove
+    steps:
+    - name: Install Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.16.x
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Populate dependencies
+      run: go mod vendor
+    - name: Install golangci-lint
+      run: go install "github.com/golangci/golangci-lint/cmd/golangci-lint@v$GOLANG_CI_VERSION"
+    - name: Lint
+      run: golangci-lint run --out-format=tab ./...
+
+  test:
+    strategy:
+      matrix:
+        go-version: [ 1.15.x, 1.16.x ] # TODO: add tip
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix['go-version'] }}
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Test
+      run: GOMAXPROCS=2 go test -p 2 -race -timeout 120s -coverprofile=/tmp/code-coverage.out ./...
+    - name: Generate coverage report
+      run: go tool cover -html=/tmp/code-coverage.out -o /tmp/code-coverage.html
+    - uses: actions/upload-artifact@v1
+      with:
+        name: test coverage report
+        path: /tmp/code-coverage.html

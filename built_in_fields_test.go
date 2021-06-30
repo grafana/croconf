@@ -79,6 +79,28 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 			},
 		},
 	},
+	{
+		name: "simple string field",
+		field: func(sources testSources) Field {
+			var dest string
+			return NewStringField(
+				&dest,
+				sources.json.From("fieldName"),
+				sources.env.From("FIELD_NAME"),
+				sources.cli.FromNameAndShorthand("field-name", "f"),
+			)
+		},
+		testCases: []fieldTestCase{
+			{
+				expectedValue: "", // default, no sources
+			},
+			{
+				json:          `{"fieldName": "foo"}`,
+				expectedValue: "foo",
+			},
+			// TODO: add more test cases for this field
+		},
+	},
 	// TODO: add a lot more like these...
 }
 
@@ -89,13 +111,15 @@ func runTestCase(t *testing.T, tcg testCaseGroup, tc fieldTestCase) {
 		env:  NewSourceFromEnv(tc.env),
 		cli:  NewSourceFromCLIFlags(tc.cli),
 	}
+
+	field := tcg.field(sources)
+
 	for _, s := range []Source{sources.json, sources.env, sources.cli} {
 		if err := s.Initialize(); err != nil {
 			t.Fatalf("unexpected error when initializing %s source: %s", s.GetName(), err)
 		}
 	}
 
-	field := tcg.field(sources)
 	errs := field.Consolidate()
 	if len(tc.expectedErrors) != len(errs) {
 		t.Fatalf("Expected %d errors but got %d: %#v", len(tc.expectedErrors), len(errs), errs)

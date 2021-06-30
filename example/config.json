@@ -1,0 +1,36 @@
+{
+    "vus": 4,
+    "userAgent": "test",
+    "duration": "15s",
+    "stages": [
+        {
+            "duration": "1s",
+            "target": 123
+        },
+        {
+            "duration": "1s",
+            "target": 123
+        }
+    ],
+    "scenarios1": {
+        "contacts": {
+            "executor": "ramping-vus",
+            "exec": "contacts",
+            "startVUs": 50,
+            "stages": [
+                {
+                    "duration": "30s",
+                    "target": 123
+                }
+            ]
+        }
+    },
+    "scenarios2": {
+        "contacts": {
+            "executor": "shared-iterations",
+            "exec": "test",
+            "vus": 50,
+            "iterations": 200
+        }
+    }
+}

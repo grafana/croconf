@@ -55,18 +55,13 @@ func (eb *envBinding) BindStringValueTo(dest *string) func() error {
 	}
 }
 
-func (eb *envBinding) BindInt64ValueTo(dest *int64) func() error {
-	return func() error {
+func (eb *envBinding) BindIntValue() func(bitSize int) (int64, error) {
+	return func(bitSize int) (int64, error) {
 		val, ok := eb.source.env[eb.name]
 		if !ok {
-			return ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
+			return 0, ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
 		}
-		intVal, err := strconv.ParseInt(val, 10, 64) // TODO: use a custom function with better error message
-		if err != nil {
-			return err
-		}
-		*dest = intVal
-		return nil
+		return strconv.ParseInt(val, 10, bitSize) // TODO: use a custom function with better error messages
 	}
 }
 

@@ -74,6 +74,21 @@ func (eb *envBinding) BindIntValue() func(bitSize int) (int64, error) {
 	}
 }
 
+func (eb *envBinding) BindBoolValueTo(dest *bool) func() error {
+	return func() error {
+		val, err := eb.lookup()
+		if err != nil {
+			return err
+		}
+		b, err := strconv.ParseBool(val)
+		if err != nil {
+			return err
+		}
+		*dest = b
+		return nil
+	}
+}
+
 func (eb *envBinding) BindTextBasedValueTo(dest encoding.TextUnmarshaler) func() error {
 	return func() error {
 		val, err := eb.lookup()

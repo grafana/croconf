@@ -2,6 +2,7 @@ package croconf
 
 import (
 	"encoding"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -28,16 +29,24 @@ func (sev *SourceEnvVars) GetName() string {
 	return "environment variables" // TODO
 }
 
-func (sev *SourceEnvVars) From(name string) LazySingleValueBinding {
+func (sev *SourceEnvVars) From(name string) *envBinding {
 	return &envBinding{
 		source: sev,
 		name:   name,
+		lookup: func() (string, error) {
+			val, ok := sev.env[name]
+			if !ok {
+				return "", ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
+			}
+			return val, nil
+		},
 	}
 }
 
 type envBinding struct {
-	source *SourceEnvVars
+	source Source
 	name   string
+	lookup func() (string, error)
 }
 
 func (eb *envBinding) GetSource() Source {
@@ -46,9 +55,9 @@ func (eb *envBinding) GetSource() Source {
 
 func (eb *envBinding) BindStringValueTo(dest *string) func() error {
 	return func() error {
-		val, ok := eb.source.env[eb.name]
-		if !ok {
-			return ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
+		val, err := eb.lookup()
+		if err != nil {
+			return err
 		}
 		*dest = val
 		return nil
@@ -57,9 +66,9 @@ func (eb *envBinding) BindStringValueTo(dest *string) func() error {
 
 func (eb *envBinding) BindIntValue() func(bitSize int) (int64, error) {
 	return func(bitSize int) (int64, error) {
-		val, ok := eb.source.env[eb.name]
-		if !ok {
-			return 0, ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
+		val, err := eb.lookup()
+		if err != nil {
+			return 0, err
 		}
 		return strconv.ParseInt(val, 10, bitSize) // TODO: use a custom function with better error messages
 	}
@@ -67,12 +76,48 @@ func (eb *envBinding) BindIntValue() func(bitSize int) (int64, error) {
 
 func (eb *envBinding) BindTextBasedValueTo(dest encoding.TextUnmarshaler) func() error {
 	return func() error {
-		val, ok := eb.source.env[eb.name]
-		if !ok {
-			return ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
+		val, err := eb.lookup()
+		if err != nil {
+			return err
 		}
 
 		return dest.UnmarshalText([]byte(val))
+	}
+}
+
+func (eb *envBinding) BindArray() func() (Array, error) {
+	return func() (Array, error) {
+		val, err := eb.lookup()
+		if err != nil {
+			return nil, err
+		}
+
+		arr := strings.Split(val, ",") // TODO: figure out how to make the delimiter configurable
+
+		return &envVarArray{eb: eb, array: arr}, nil
+	}
+}
+
+type envVarArray struct {
+	eb    *envBinding
+	array []string
+}
+
+func (eva *envVarArray) Len() int {
+	return len(eva.array)
+}
+
+func (eva *envVarArray) Element(elNum int) LazySingleValueBinding {
+	name := fmt.Sprintf("%s[%d]", eva.eb.name, elNum)
+	return &envBinding{
+		source: eva.eb.source,
+		name:   name,
+		lookup: func() (string, error) {
+			if elNum >= len(eva.array) {
+				return "", fmt.Errorf("tried to access invalid element %s, array only has %d elements", name, elNum)
+			}
+			return eva.array[elNum], nil
+		},
 	}
 }
 

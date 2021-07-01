@@ -70,6 +70,7 @@ func runCommand(
 	dumpField(scriptConf.cm, &scriptConf.Scenarios2, "Scenarios2")
 	dumpField(scriptConf.cm, &scriptConf.DNS.TTL, "DNS.TTL")
 	dumpField(scriptConf.cm, &scriptConf.DNS.Server, "DNS.Server")
+	dumpField(scriptConf.cm, &scriptConf.TinyArr, "TinyArr")
 }
 
 //nolint:forbidigo

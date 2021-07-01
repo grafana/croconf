@@ -157,3 +157,42 @@ func (jbd *jsonBindingWithDest) BindValue() func() error {
 		return jbd.dest.UnmarshalJSON(raw)
 	}
 }
+
+func (jb *jsonBinding) BindArray() func() (Array, error) {
+	return func() (Array, error) {
+		raw, err := jb.lookup()
+		if err != nil {
+			return nil, err
+		}
+
+		var rawArr []json.RawMessage
+		if err := json.Unmarshal(raw, &rawArr); err != nil { // TODO: better error message
+			return nil, err
+		}
+
+		return &jsonArrBinding{jb: jb, array: rawArr}, nil
+	}
+}
+
+type jsonArrBinding struct {
+	jb    *jsonBinding
+	array []json.RawMessage
+}
+
+func (jba *jsonArrBinding) Len() int {
+	return len(jba.array)
+}
+
+func (jba *jsonArrBinding) Element(elNum int) LazySingleValueBinding {
+	name := fmt.Sprintf("%s[%d]", jba.jb.name, elNum)
+	return &jsonBinding{
+		source: jba.jb.source,
+		name:   name,
+		lookup: func() (json.RawMessage, error) {
+			if elNum >= len(jba.array) {
+				return nil, fmt.Errorf("tried to access invalid element %s, array only has %d elements", name, elNum)
+			}
+			return jba.array[elNum], nil
+		},
+	}
+}

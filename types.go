@@ -30,6 +30,16 @@ type LazySingleValueBinding interface {
 	TextBasedValueBinding
 }
 
+type ArrayBinding interface {
+	SourceGetter
+	BindArray() func() (Array, error)
+}
+
+type Array interface { // TODO: rename to List and ListBinding?
+	Len() int
+	Element(int) LazySingleValueBinding
+}
+
 type StringValueBinding interface {
 	SourceGetter
 	BindStringValueTo(dest *string) func() error

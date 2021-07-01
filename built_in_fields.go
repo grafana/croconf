@@ -81,6 +81,57 @@ func NewInt8Field(dest *int8, sources ...IntValueBinding) Field {
 	})
 }
 
+func NewInt64SliceField(dest *[]int64, sources ...ArrayBinding) Field {
+	return newField(dest, len(sources), func(sourceNum int) valueBinding {
+		source := sources[sourceNum]
+		arrBind := source.BindArray()
+		return vb(source, func() error {
+			sourceArr, err := arrBind()
+			if err != nil {
+				return err
+			}
+
+			arrLen := sourceArr.Len()
+			newArr := make([]int64, arrLen)
+			for i := 0; i < arrLen; i++ {
+				el, err := sourceArr.Element(i).BindIntValue()(64)
+				if err != nil {
+					return err
+				}
+				newArr[i] = el
+			}
+			*dest = newArr
+			return nil
+		})
+	})
+}
+
+func NewInt8SliceField(dest *[]int8, sources ...ArrayBinding) Field {
+	// TODO: figure out some way to avoid the boilerplate?
+	return newField(dest, len(sources), func(sourceNum int) valueBinding {
+		source := sources[sourceNum]
+		arrBind := source.BindArray()
+		return vb(source, func() error {
+			sourceArr, err := arrBind()
+			if err != nil {
+				return err
+			}
+
+			arrLen := sourceArr.Len()
+			newArr := make([]int8, arrLen)
+			for i := 0; i < arrLen; i++ {
+				el, err := sourceArr.Element(i).BindIntValue()(8)
+				if err != nil {
+					return err
+				}
+				newArr[i] = int8(el) // this is safe
+			}
+			*dest = newArr
+			return nil
+		})
+	})
+}
+
 func NewStringField(dest *string, sources ...StringValueBinding) Field {
 	return newField(dest, len(sources), func(sourceNum int) valueBinding {
 		return vb(sources[sourceNum], sources[sourceNum].BindStringValueTo(dest))

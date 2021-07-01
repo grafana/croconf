@@ -20,7 +20,8 @@ type ScriptConfig struct {
 		Server string
 	}
 
-	Tiny int8
+	Tiny    int8
+	TinyArr []int8
 
 	Scenarios1 lib.ScenarioConfigs
 
@@ -89,6 +90,13 @@ func NewScriptConfig(
 		jsonSource.From("tiny"),
 		envVarsSource.From("K6_TINY"),
 		cliSource.FromName("tiny"),
+	))
+
+	cm.AddField(croconf.NewInt8SliceField(
+		&conf.TinyArr,
+		jsonSource.From("tinyArr"),
+		envVarsSource.From("K6_TINY_ARR"),
+		// TODO: other sources and defaults
 	))
 
 	// This is one way to add a custom field in a type-safe manner:

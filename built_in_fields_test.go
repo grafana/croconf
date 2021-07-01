@@ -143,6 +143,67 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 		},
 	},
 	{
+		name: "int8 array",
+		field: func(sources testSources) Field {
+			var dest []int8
+			return NewInt8SliceField(
+				&dest,
+				sources.json.From("tinyArr"),
+				sources.env.From("TINY_ARR"),
+			)
+		},
+		testCases: []fieldTestCase{
+			// TODO: test defaults and null values
+			{
+				json:          `{"tinyArr": [1, 2]}`,
+				expectedValue: []int8{1, 2},
+			},
+			{
+				json:          `{"tinyArr": [1, 1, 2]}`,
+				env:           []string{`TINY_ARR=3,5,8`},
+				expectedValue: []int8{3, 5, 8},
+			},
+			{
+				json: `{"tinyArr": [1, 255]}`,
+				expectedErrors: []string{
+					`strconv.ParseInt: parsing "255": value out of range`, // TODO: better error
+				},
+			},
+		},
+	},
+	{
+		name: "int64 array",
+		field: func(sources testSources) Field {
+			var dest []int64
+			return NewInt64SliceField(
+				&dest,
+				sources.env.From("BIG_ARR"),
+				sources.json.From("bigArr"),
+			)
+		},
+		testCases: []fieldTestCase{
+			// TODO: test defaults and null values
+			{
+				env:           []string{`BIG_ARR=1,2,1337`},
+				expectedValue: []int64{1, 2, 1337},
+			},
+			{
+				env:           []string{`BIG_ARR=1,2,1337`},
+				json:          `{"bigArr": [0, 2, 4, 8]}`,
+				expectedValue: []int64{0, 2, 4, 8},
+			},
+			{
+				env:  []string{`BIG_ARR=1,2,foo`},
+				json: `{"bigArr": [1, 2, null]}`,
+				expectedErrors: []string{
+					// TODO: better errors
+					`strconv.ParseInt: parsing "foo": invalid syntax`,
+					`strconv.ParseInt: parsing "null": invalid syntax`,
+				},
+			},
+		},
+	},
+	{
 		name: "nested config",
 		field: func(sources testSources) Field {
 			var dest string

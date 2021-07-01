@@ -4,6 +4,7 @@ import (
 	"encoding"
 	"encoding/json"
 	"fmt"
+	"strconv"
 )
 
 // TODO: use json.Decoder for this? json.Unmarshal() is a bit too magical
@@ -102,14 +103,15 @@ func (jb *jsonBinding) BindStringValueTo(dest *string) func() error {
 	}
 }
 
-func (jb *jsonBinding) BindInt64ValueTo(dest *int64) func() error {
-	return func() error {
+func (jb *jsonBinding) BindIntValue() func(bitSize int) (int64, error) {
+	return func(bitSize int) (int64, error) {
 		raw, err := jb.lookup()
 		if err != nil {
-			return err
+			return 0, err
 		}
 
-		return json.Unmarshal(raw, dest) // TODO: less reflection, better error messages
+		// TODO: use a custom parser for better error messages
+		return strconv.ParseInt(string(raw), 10, bitSize)
 	}
 }
 

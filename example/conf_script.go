@@ -20,6 +20,8 @@ type ScriptConfig struct {
 		Server string
 	}
 
+	Tiny int8
+
 	Scenarios1 lib.ScenarioConfigs
 
 	Scenarios2 lib.ScenarioConfigs
@@ -54,7 +56,7 @@ func NewScriptConfig(
 
 	cm.AddField(croconf.NewInt64Field(
 		&conf.VUs,
-		croconf.DefaultInt64Value(1),
+		croconf.DefaultIntValue(1),
 		jsonSource.From("vus"),
 		envVarsSource.From("K6_VUS"),
 		cliSource.FromNameAndShorthand("vus", "u"),
@@ -79,6 +81,14 @@ func NewScriptConfig(
 		&conf.DNS.Server,
 		croconf.DefaultStringValue("8.8.8.8"),
 		jsonSource.From("dns").From("server"),
+	))
+
+	cm.AddField(croconf.NewInt8Field(
+		&conf.Tiny,
+		croconf.DefaultIntValue(1),
+		jsonSource.From("tiny"),
+		envVarsSource.From("K6_TINY"),
+		cliSource.FromName("tiny"),
 	))
 
 	// This is one way to add a custom field in a type-safe manner:

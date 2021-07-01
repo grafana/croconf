@@ -34,7 +34,7 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 			var dest int64
 			return NewInt64Field(
 				&dest,
-				DefaultInt64Value(1),
+				DefaultIntValue(1),
 				sources.json.From("vus"),
 				sources.env.From("K6_VUS"),
 				sources.cli.FromNameAndShorthand("vus", "u"),
@@ -47,7 +47,7 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 			{
 				json: `{"vus": "foo"}`,
 				// TODO: improve this error message, something like `"foo" is not a valid integer value` would be much better
-				expectedErrors: []string{"json: cannot unmarshal string into Go value of type int64"},
+				expectedErrors: []string{`strconv.ParseInt: parsing "\"foo\"": invalid syntax`},
 			},
 			{
 				json:          `{"vus": 2}`,
@@ -67,7 +67,7 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 				json: `{"vus": "foo"}`,
 				env:  []string{"K6_VUS=bar"},
 				expectedErrors: []string{ // TODO: better error messages
-					`json: cannot unmarshal string into Go value of type int64`,
+					`strconv.ParseInt: parsing "\"foo\"": invalid syntax`,
 					`strconv.ParseInt: parsing "bar": invalid syntax`,
 				},
 			},
@@ -99,6 +99,47 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 				expectedValue: "foo",
 			},
 			// TODO: add more test cases for this field
+		},
+	},
+	{
+		name: "int8 default",
+		field: func(sources testSources) Field {
+			var dest int8
+			return NewInt8Field(
+				&dest,
+				DefaultIntValue(129),
+			)
+		},
+		testCases: []fieldTestCase{
+			{
+				expectedErrors: []string{"invalid value 129, has to be between -128 and 127"},
+			},
+		},
+	},
+	{
+		name: "int8 field",
+		field: func(sources testSources) Field {
+			var dest int8
+			return NewInt8Field(
+				&dest,
+				DefaultIntValue(127),
+				sources.json.From("tiny"),
+				sources.env.From("K6_TINY"),
+				sources.cli.FromName("tiny"),
+			)
+		},
+		testCases: []fieldTestCase{
+			{
+				expectedValue: int8(127),
+			},
+			{
+				json:          `{"tiny": -128}`,
+				expectedValue: int8(-128),
+			},
+			{
+				cli:            []string{"--tiny=-129"},
+				expectedErrors: []string{`strconv.ParseInt: parsing "-129": value out of range`}, // TODO: better error message
+			},
 		},
 	},
 	{

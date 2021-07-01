@@ -53,9 +53,31 @@ func newField(dest interface{}, sourcesLen int, callback func(sourceNum int) val
 	return f
 }
 
-func NewInt64Field(dest *int64, sources ...Int64ValueBinding) Field {
+func NewInt64Field(dest *int64, sources ...IntValueBinding) Field {
 	return newField(dest, len(sources), func(sourceNum int) valueBinding {
-		return vb(sources[sourceNum], sources[sourceNum].BindInt64ValueTo(dest))
+		binding := sources[sourceNum].BindIntValue()
+		return vb(sources[sourceNum], func() error {
+			val, err := binding(64)
+			if err != nil {
+				return err
+			}
+			*dest = val
+			return nil
+		})
+	})
+}
+
+func NewInt8Field(dest *int8, sources ...IntValueBinding) Field {
+	return newField(dest, len(sources), func(sourceNum int) valueBinding {
+		binding := sources[sourceNum].BindIntValue()
+		return vb(sources[sourceNum], func() error {
+			val, err := binding(8)
+			if err != nil {
+				return err
+			}
+			*dest = int8(val) // this is safe
+			return nil
+		})
 	})
 }
 

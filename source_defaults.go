@@ -1,6 +1,9 @@
 package croconf
 
-import "encoding"
+import (
+	"encoding"
+	"fmt"
+)
 
 // TODO: make more flexible with callbacks, so that besides defaut values, we
 // can use these for custom wrappers as well?
@@ -31,21 +34,26 @@ func DefaultStringValue(s string) interface {
 	return defaultStringValue(s)
 }
 
-type defaultInt64Value int64
+type defaultIntValue int64
 
-func (div defaultInt64Value) BindInt64ValueTo(dest *int64) func() error {
-	return func() error {
-		*dest = int64(div)
-		return nil
+func (div defaultIntValue) BindIntValue() func(bitSize int) (int64, error) {
+	return func(bitSize int) (int64, error) {
+		val := int64(div)
+		// See https://golang.org/pkg/math/#pkg-constants
+		min, max := int64(-1<<(bitSize-1)), int64(1<<(bitSize-1)-1)
+		if val < min || val > max {
+			return 0, fmt.Errorf("invalid value %d, has to be between %d and %d", val, min, max)
+		}
+		return val, nil
 	}
 }
 
-func (div defaultInt64Value) GetSource() Source {
+func (div defaultIntValue) GetSource() Source {
 	return nil
 }
 
-func DefaultInt64Value(i int64) Int64ValueBinding {
-	return defaultInt64Value(i)
+func DefaultIntValue(i int64) IntValueBinding {
+	return defaultIntValue(i)
 }
 
 type DefaultCustomValue func()

@@ -23,20 +23,10 @@ type SourceGetter interface {
 type LazySingleValueBinding interface {
 	SourceGetter
 	StringValueBinding
-	// TODO: all all other types
-	/*
-		UintValueBinding
-		Uint8ValueBinding
-		Uint16ValueBinding
-		Uint32ValueBinding
-		Uint64ValueBinding
-		IntValueBinding
-		Int8ValueBinding
-		Int16ValueBinding
-		Int32ValueBinding
-		...
-	*/
-	Int64ValueBinding
+	IntValueBinding
+	// TODO: uncomment when we implement them
+	// UintValueBinding
+	// FloatValueBinding
 	TextBasedValueBinding
 }
 
@@ -45,9 +35,19 @@ type StringValueBinding interface {
 	BindStringValueTo(dest *string) func() error
 }
 
-type Int64ValueBinding interface {
+type IntValueBinding interface {
 	SourceGetter
-	BindInt64ValueTo(dest *int64) func() error
+	BindIntValue() func(bitSize int) (int64, error)
+}
+
+type UintValueBinding interface {
+	SourceGetter
+	BindUintValue() func(bitSize int) (uint64, error)
+}
+
+type FloatValueBinding interface {
+	SourceGetter
+	BindFloatValue() func(bitSize int) (float64, error)
 }
 
 type TextBasedValueBinding interface {

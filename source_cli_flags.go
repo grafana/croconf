@@ -88,13 +88,22 @@ func (cb *cliBinding) BindTextBasedValueTo(dest encoding.TextUnmarshaler) func()
 	})
 }
 
-func (cb *cliBinding) BindInt64ValueTo(dest *int64) func() error {
-	return cb.textValueHelper(func(s string) error {
-		intVal, err := strconv.ParseInt(s, 10, 64) // TODO: use a custom function with better error message
-		if err != nil {
-			return err
+func (cb *cliBinding) BindIntValue() func(bitSize int) (int64, error) {
+	if cb.position > 0 {
+		return func(bitSize int) (int64, error) {
+			if cb.source.flagSet.NArg() < cb.position {
+				return 0, ErrorMissing
+			}
+			// TODO: use a custom function with better error message
+			return strconv.ParseInt(cb.source.flagSet.Arg(cb.position-1), 10, bitSize)
 		}
-		*dest = intVal
-		return nil
-	})
+	}
+	s := cb.source.flagSet.StringP(cb.longhand, cb.shorthand, "", "")
+	return func(bitSize int) (int64, error) {
+		if f := cb.source.flagSet.Lookup(cb.longhand); f.Changed {
+			// TODO: use a custom function with better error message
+			return strconv.ParseInt(*s, 10, bitSize)
+		}
+		return 0, ErrorMissing
+	}
 }

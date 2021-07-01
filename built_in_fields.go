@@ -144,6 +144,12 @@ func NewTextBasedField(dest encoding.TextUnmarshaler, sources ...TextBasedValueB
 	})
 }
 
+func NewBoolField(dest *bool, sources ...BoolValueBinding) Field {
+	return newField(dest, len(sources), func(sourceNum int) valueBinding {
+		return vb(sources[sourceNum], sources[sourceNum].BindBoolValueTo(dest))
+	})
+}
+
 func NewCustomField(dest interface{}, sources ...CustomValueBinding) Field {
 	return newField(dest, len(sources), func(sourceNum int) valueBinding {
 		return vb(sources[sourceNum], sources[sourceNum].BindValue())

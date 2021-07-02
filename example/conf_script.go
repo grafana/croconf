@@ -96,6 +96,7 @@ func NewScriptConfig(
 		&conf.TinyArr,
 		jsonSource.From("tinyArr"),
 		envVarsSource.From("K6_TINY_ARR"),
+		cliSource.FromNameAndShorthand("tiny-arr", "a"),
 		// TODO: other sources and defaults
 	))
 

@@ -5,31 +5,23 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/spf13/pflag"
 	"go.k6.io/croconf/flag"
 )
 
 type SourceCLI struct {
-	flags   []string
-	flagSet *pflag.FlagSet // TODO: replace pflag, it's a very poor fit for this architecture
+	flags []string
 
 	fs     *flag.Set
 	parser *flag.Parser
 }
 
 func NewSourceFromCLIFlags(flags []string) *SourceCLI {
-	flagSet := pflag.NewFlagSet("this is only temporary", pflag.ContinueOnError)
-	flagSet.SortFlags = false
-	flagSet.ParseErrorsWhitelist = pflag.ParseErrorsWhitelist{UnknownFlags: true}
-
 	return &SourceCLI{
-		flags:   flags,
-		flagSet: flagSet,
+		flags: flags,
 	}
 }
 
 func (sc *SourceCLI) Initialize() error {
-	//err := sc.flagSet.Parse(sc.flags)
 	sc.parser = flag.NewParser()
 	fs, err := sc.parser.Parse(sc.flags)
 	if err != nil {
@@ -123,7 +115,7 @@ func (cb *cliBinding) BindIntValue() func(int) (int64, error) {
 	return func(bitSize int) (int64, error) {
 		v, err := cb.lookup()
 		if err != nil {
-			// TODO what to use? cb.shorthand or cb.longhand or smth joint
+			// TODO what to use? cb.shorthand or cb.longhand or pos or smth joint
 			return 0, NewBindFieldMissingError(cb.source.GetName(), cb.longhand)
 		}
 		val, bindErr := parseInt(v, 10, bitSize)
@@ -135,42 +127,32 @@ func (cb *cliBinding) BindIntValue() func(int) (int64, error) {
 }
 
 func (cb *cliBinding) BindUintValue() func(bitSize int) (uint64, error) {
-	if cb.position > 0 {
-		return func(bitSize int) (uint64, error) {
-			if cb.source.flagSet.NArg() < cb.position {
-				return 0, ErrorMissing
-			}
-			// TODO: use a custom function with better error message
-			return parseUint(cb.source.flagSet.Arg(cb.position-1), 10, bitSize)
-		}
-	}
-	s := cb.source.flagSet.StringP(cb.longhand, cb.shorthand, "", "")
 	return func(bitSize int) (uint64, error) {
-		if f := cb.source.flagSet.Lookup(cb.longhand); f.Changed {
-			// TODO: use a custom function with better error message
-			return parseUint(*s, 10, bitSize)
+		v, err := cb.lookup()
+		if err != nil {
+			// TODO what to use? cb.shorthand or cb.longhand or pos or smth joint
+			return 0, NewBindFieldMissingError(cb.source.GetName(), cb.longhand)
 		}
-		return 0, ErrorMissing
+		val, bindErr := parseUint(v, 10, bitSize)
+		if bindErr != nil {
+			return 0, bindErr.withFuncName("BindIntValue")
+		}
+		return val, nil
 	}
 }
 
 func (cb *cliBinding) BindFloatValue() func(bitSize int) (float64, error) {
-	if cb.position > 0 {
-		return func(bitSize int) (float64, error) {
-			if cb.source.flagSet.NArg() < cb.position {
-				return 0, ErrorMissing
-			}
-			// TODO: use a custom function with better error message
-			return parseFloat(cb.source.flagSet.Arg(cb.position-1), bitSize)
-		}
-	}
-	s := cb.source.flagSet.StringP(cb.longhand, cb.shorthand, "", "")
 	return func(bitSize int) (float64, error) {
-		if f := cb.source.flagSet.Lookup(cb.longhand); f.Changed {
-			// TODO: use a custom function with better error message
-			return parseFloat(*s, bitSize)
+		v, err := cb.lookup()
+		if err != nil {
+			// TODO what to use? cb.shorthand or cb.longhand or pos or smth joint
+			return 0, NewBindFieldMissingError(cb.source.GetName(), cb.longhand)
 		}
-		return 0, ErrorMissing
+		val, bindErr := parseFloat(v, bitSize)
+		if bindErr != nil {
+			return 0, bindErr.withFuncName("BindIntValue")
+		}
+		return val, nil
 	}
 }
 

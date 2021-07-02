@@ -67,13 +67,8 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 				json: `{"vus": "foo"}`,
 				env:  []string{"K6_VUS=bar"},
 				expectedErrors: []string{ // TODO: better error messages
-<<<<<<< HEAD
 					`strconv.ParseInt: parsing "\"foo\"": invalid syntax`,
 					`strconv.ParseInt: parsing "bar": invalid syntax`,
-=======
-					`json: cannot unmarshal string into Go value of type int64`,
-					`BindInt64ValueTo: parsing "bar": invalid syntax`,
->>>>>>> 12c1e96 ([fix] fix)
 				},
 			},
 			{

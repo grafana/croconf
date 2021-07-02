@@ -4,7 +4,6 @@ import (
 	"encoding"
 	"encoding/json"
 	"fmt"
-	"strconv"
 )
 
 // TODO: use json.Decoder for this? json.Unmarshal() is a bit too magical
@@ -111,7 +110,31 @@ func (jb *jsonBinding) BindIntValue() func(bitSize int) (int64, error) {
 		}
 
 		// TODO: use a custom parser for better error messages
-		return strconv.ParseInt(string(raw), 10, bitSize)
+		return parseInt(string(raw), 10, bitSize)
+	}
+}
+
+func (jb *jsonBinding) BindUintValue() func(bitSize int) (uint64, error) {
+	return func(bitSize int) (uint64, error) {
+		raw, err := jb.lookup()
+		if err != nil {
+			return 0, err
+		}
+
+		// TODO: use a custom parser for better error messages
+		return parseUint(string(raw), 10, bitSize)
+	}
+}
+
+func (jb *jsonBinding) BindFloatValue() func(bitSize int) (float64, error) {
+	return func(bitSize int) (float64, error) {
+		raw, err := jb.lookup()
+		if err != nil {
+			return 0, err
+		}
+
+		// TODO: use a custom parser for better error messages
+		return parseFloat(string(raw), bitSize)
 	}
 }
 

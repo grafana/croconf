@@ -69,9 +69,9 @@ func (eb *envBinding) BindIntValue() func(bitSize int) (int64, error) {
 		if err != nil {
 			return 0, err
 		}
-		intVal, err := parseInt(val, 10, bitSize)
+		intVal, bindErr := parseInt(val, 10, bitSize)
 		if err != nil {
-			return 0, err.withFuncName("BindIntValue")
+			return 0, bindErr.withFuncName("BindIntValue")
 		}
 		return intVal, nil
 	}
@@ -79,13 +79,13 @@ func (eb *envBinding) BindIntValue() func(bitSize int) (int64, error) {
 
 func (eb *envBinding) BindUintValue() func(bitSize int) (uint64, error) {
 	return func(bitSize int) (uint64, error) {
-		strVal, ok := eb.source.env[eb.name]
-		if !ok {
-			return 0, NewBindNameMissingError("BindUintValue", eb.name)
-		}
-		intVal, err := parseUint(strVal, 10, bitSize)
+		val, err := eb.lookup()
 		if err != nil {
-			return 0, err.withFuncName("BindUintValue")
+			return 0, err
+		}
+		intVal, bindErr := parseUint(val, 10, bitSize)
+		if err != nil {
+			return 0, bindErr.withFuncName("BindUintValue")
 		}
 		return intVal, nil
 	}
@@ -93,13 +93,13 @@ func (eb *envBinding) BindUintValue() func(bitSize int) (uint64, error) {
 
 func (eb *envBinding) BindFloatValue() func(bitSize int) (float64, error) {
 	return func(bitSize int) (float64, error) {
-		strVal, ok := eb.source.env[eb.name]
-		if !ok {
-			return 0, NewBindNameMissingError("BindFloatValue", eb.name)
-		}
-		val, err := parseFloat(strVal, bitSize)
+		strVal, err := eb.lookup()
 		if err != nil {
-			return 0, err.withFuncName("BindFloatValue")
+			return 0, err
+		}
+		val, bindErr := parseFloat(strVal, bitSize)
+		if err != nil {
+			return 0, bindErr.withFuncName("BindFloatValue")
 		}
 		return val, nil
 	}

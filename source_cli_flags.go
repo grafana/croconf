@@ -93,25 +93,55 @@ func (cb *cliBinding) BindIntValue() func(bitSize int) (int64, error) {
 			if cb.source.flagSet.NArg() < cb.position {
 				return 0, ErrorMissing
 			}
-			s := cb.source.flagSet.Arg(cb.position - 1)
-			val, err := parseInt(s, 10, bitSize)
-			if err != nil {
-				setErrorFunc(err, "BindIntValue")
-				return 0, err
-			}
-			return val, nil
+			// TODO: use a custom function with better error message
+			return parseInt(cb.source.flagSet.Arg(cb.position-1), 10, bitSize)
 		}
 	}
 	s := cb.source.flagSet.StringP(cb.longhand, cb.shorthand, "", "")
 	return func(bitSize int) (int64, error) {
 		if f := cb.source.flagSet.Lookup(cb.longhand); f.Changed {
+			// TODO: use a custom function with better error message
+			return parseInt(*s, 10, bitSize)
+		}
+		return 0, ErrorMissing
+	}
+}
 
-			val, err := parseInt(*s, 10, bitSize)
-			if err != nil {
-				setErrorFunc(err, "BindIntValue")
-				return 0, err
+func (cb *cliBinding) BindUintValue() func(bitSize int) (uint64, error) {
+	if cb.position > 0 {
+		return func(bitSize int) (uint64, error) {
+			if cb.source.flagSet.NArg() < cb.position {
+				return 0, ErrorMissing
 			}
-			return val, nil
+			// TODO: use a custom function with better error message
+			return parseUint(cb.source.flagSet.Arg(cb.position-1), 10, bitSize)
+		}
+	}
+	s := cb.source.flagSet.StringP(cb.longhand, cb.shorthand, "", "")
+	return func(bitSize int) (uint64, error) {
+		if f := cb.source.flagSet.Lookup(cb.longhand); f.Changed {
+			// TODO: use a custom function with better error message
+			return parseUint(*s, 10, bitSize)
+		}
+		return 0, ErrorMissing
+	}
+}
+
+func (cb *cliBinding) BindFloatValue() func(bitSize int) (float64, error) {
+	if cb.position > 0 {
+		return func(bitSize int) (float64, error) {
+			if cb.source.flagSet.NArg() < cb.position {
+				return 0, ErrorMissing
+			}
+			// TODO: use a custom function with better error message
+			return parseFloat(cb.source.flagSet.Arg(cb.position-1), bitSize)
+		}
+	}
+	s := cb.source.flagSet.StringP(cb.longhand, cb.shorthand, "", "")
+	return func(bitSize int) (float64, error) {
+		if f := cb.source.flagSet.Lookup(cb.longhand); f.Changed {
+			// TODO: use a custom function with better error message
+			return parseFloat(*s, bitSize)
 		}
 		return 0, ErrorMissing
 	}

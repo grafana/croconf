@@ -115,6 +115,17 @@ func (jb *jsonBinding) BindIntValue() func(bitSize int) (int64, error) {
 	}
 }
 
+func (jb *jsonBinding) BindBoolValueTo(dest *bool) func() error {
+	return func() error {
+		raw, err := jb.lookup()
+		if err != nil {
+			return err
+		}
+
+		return json.Unmarshal(raw, dest) // TODO: less reflection, better error messages
+	}
+}
+
 func (jb *jsonBinding) BindTextBasedValueTo(dest encoding.TextUnmarshaler) func() error {
 	return func() error {
 		raw, err := jb.lookup()

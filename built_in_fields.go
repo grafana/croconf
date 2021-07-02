@@ -26,7 +26,11 @@ func (f *field) Consolidate() []error {
 		err := vb.apply()
 		if err == nil {
 			f.source = vb.sourceGetter.GetSource()
-		} else if !errors.Is(ErrorMissing, err) {
+			continue
+		}
+		_, ok := err.(*BindFieldMissingError)
+		// TODO replace ErrorMissing with BindNameMissingError
+		if !errors.Is(ErrorMissing, err) && !ok {
 			errs = append(errs, err)
 		}
 	}

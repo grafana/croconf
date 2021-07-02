@@ -6,13 +6,13 @@ func TestJSONBindIntValue(t *testing.T) {
 
 	var json = []byte(`{"k6_vus":6,"pi":3.14,"k6_config":"./config.json","k6_user_agent":"foo"}`)
 
-	source :=  NewJSONSource(json)
+	source := NewJSONSource(json)
 	vus := source.From("k6_vus")
 	k6UserAgent := source.From("k6_user_agent")
 	missed := source.From("missed")
-	
+
 	if err := source.Initialize(); err != nil {
-		t.Failf(err)
+		t.Error(err)
 	}
 
 	withFixedBytesSizeFunc := func(bytesSize int) {
@@ -29,7 +29,7 @@ func TestJSONBindIntValue(t *testing.T) {
 		if err == nil {
 			t.Error("BindIntValue: expected field missing error")
 		}
-		if err.Error() != "field missed is missing in config source jsonment variables" {
+		if err.Error() != "field missed is missing in config source json" {
 			t.Error("BindIntValue: unexpected error message:", err)
 		}
 
@@ -38,7 +38,7 @@ func TestJSONBindIntValue(t *testing.T) {
 			t.Error("BindIntValue: expected syntax error")
 		}
 		if err.Error() != "BindIntValue: parsing \"foo\": invalid syntax" {
-			t.Errorf("BindIntValue: unexpected error message")
+			t.Error("BindIntValue: unexpected error message:", err)
 		}
 	}
 
@@ -71,7 +71,7 @@ func TestJSONBindUintValue(t *testing.T) {
 		if err == nil {
 			t.Error("BindUintValue: expected field missing error")
 		}
-		if err.Error() != "field missed is missing in config source jsonment variables" {
+		if err.Error() != "field missed is missing in config source json" {
 			t.Error("BindUintValue: unexpected error message:", err)
 		}
 
@@ -123,7 +123,7 @@ func TestJSONFloatValue(t *testing.T) {
 		if err == nil {
 			t.Error("BindFloatValue: expected field missing error")
 		}
-		if err.Error() != "field missed is missing in config source jsonment variables" {
+		if err.Error() != "field missed is missing in config source json" {
 			t.Error("BindFloatValue: unexpected error message:", err)
 		}
 

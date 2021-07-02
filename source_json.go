@@ -23,7 +23,11 @@ func NewJSONSource(data []byte) *SourceJSON {
 			if len(data) == 0 {
 				return nil
 			}
-			return json.Unmarshal(data, &fields) // TODO: better error message
+			err := json.Unmarshal(data, &fields)
+			if err != nil {
+				return NewJSONSourceInitError(data, err)
+			}
+			return nil
 		},
 	}
 }
@@ -48,7 +52,7 @@ func (sj *SourceJSON) From(name string) *jsonBinding {
 		lookup: func() (json.RawMessage, error) {
 			raw, ok := sj.Lookup(name)
 			if !ok {
-				return nil, ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
+				return nil, NewBindFieldMissingError(sj.GetName(), name)
 			}
 			return raw, nil
 		},
@@ -79,12 +83,12 @@ func (jb *jsonBinding) From(name string) *jsonBinding {
 			// TODO: cache this, so we don't parse sub-configs multiple times
 			subdoc := NewJSONSource(raw)
 			if err := subdoc.init(); err != nil {
-				return nil, err
+				return nil, NewJSONSourceInitError(raw, err)
 			}
 
 			rawEl, ok := subdoc.Lookup(name)
 			if !ok {
-				return nil, ErrorMissing // TODO: better error message, e.g. 'field %s is not present in %s'?
+				return nil, NewBindFieldMissingError(subdoc.GetName(), name)
 			}
 			return rawEl, nil
 		},

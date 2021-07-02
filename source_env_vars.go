@@ -68,9 +68,44 @@ func (eb *envBinding) BindIntValue() func(bitSize int) (int64, error) {
 	return func(bitSize int) (int64, error) {
 		val, err := eb.lookup()
 		if err != nil {
-			return 0, err
+			// TODO: we might want to integrate custom error into lookup() method
+			return 0, NewBindFieldMissingError(eb.source.GetName(), eb.name)
 		}
-		return strconv.ParseInt(val, 10, bitSize) // TODO: use a custom function with better error messages
+		intVal, bindErr := parseInt(val, 10, bitSize)
+		if bindErr != nil {
+			return 0, bindErr.withFuncName("BindIntValue")
+		}
+		return intVal, nil
+	}
+}
+
+func (eb *envBinding) BindUintValue() func(bitSize int) (uint64, error) {
+	return func(bitSize int) (uint64, error) {
+		val, err := eb.lookup()
+		if err != nil {
+			// TODO: we might want to integrate custom error into lookup() method
+			return 0, NewBindFieldMissingError(eb.source.GetName(), eb.name)
+		}
+		intVal, bindErr := parseUint(val, 10, bitSize)
+		if bindErr != nil {
+			return 0, bindErr.withFuncName("BindUintValue")
+		}
+		return intVal, nil
+	}
+}
+
+func (eb *envBinding) BindFloatValue() func(bitSize int) (float64, error) {
+	return func(bitSize int) (float64, error) {
+		strVal, err := eb.lookup()
+		if err != nil {
+			// TODO: we might want to integrate custom error into lookup() method
+			return 0, NewBindFieldMissingError(eb.source.GetName(), eb.name)
+		}
+		val, bindErr := parseFloat(strVal, bitSize)
+		if bindErr != nil {
+			return 0, bindErr.withFuncName("BindFloatValue")
+		}
+		return val, nil
 	}
 }
 
@@ -93,7 +128,7 @@ func (eb *envBinding) BindTextBasedValueTo(dest encoding.TextUnmarshaler) func()
 	return func() error {
 		val, err := eb.lookup()
 		if err != nil {
-			return err
+			return NewBindFieldMissingError(eb.source.GetName(), eb.name)
 		}
 
 		return dest.UnmarshalText([]byte(val))
@@ -104,7 +139,7 @@ func (eb *envBinding) BindArray() func() (Array, error) {
 	return func() (Array, error) {
 		val, err := eb.lookup()
 		if err != nil {
-			return nil, err
+			return nil, NewBindFieldMissingError(eb.source.GetName(), eb.name)
 		}
 
 		arr := strings.Split(val, ",") // TODO: figure out how to make the delimiter configurable

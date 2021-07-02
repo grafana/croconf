@@ -1,7 +1,6 @@
 package flag
 
 import (
-	"fmt"
 	"strings"
 )
 

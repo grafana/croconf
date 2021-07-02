@@ -119,14 +119,58 @@ func (cb *cliBinding) BindTextBasedValueTo(dest encoding.TextUnmarshaler) func()
 		return dest.UnmarshalText([]byte(s))
 	})
 }
-
 func (cb *cliBinding) BindIntValue() func(int) (int64, error) {
-	return func(bitsize int) (int64, error) {
+	return func(bitSize int) (int64, error) {
 		v, err := cb.lookup()
 		if err != nil {
-			return 0, ErrorMissing
+			// TODO what to use? cb.shorthand or cb.longhand or smth joint
+			return 0, NewBindFieldMissingError(cb.source.GetName(), cb.longhand)
 		}
-		return strconv.ParseInt(v, 10, bitsize)
+		val, bindErr := parseInt(v, 10, bitSize)
+		if bindErr != nil {
+			return 0, bindErr.withFuncName("BindIntValue")
+		}
+		return val, nil
+	}
+}
+
+func (cb *cliBinding) BindUintValue() func(bitSize int) (uint64, error) {
+	if cb.position > 0 {
+		return func(bitSize int) (uint64, error) {
+			if cb.source.flagSet.NArg() < cb.position {
+				return 0, ErrorMissing
+			}
+			// TODO: use a custom function with better error message
+			return parseUint(cb.source.flagSet.Arg(cb.position-1), 10, bitSize)
+		}
+	}
+	s := cb.source.flagSet.StringP(cb.longhand, cb.shorthand, "", "")
+	return func(bitSize int) (uint64, error) {
+		if f := cb.source.flagSet.Lookup(cb.longhand); f.Changed {
+			// TODO: use a custom function with better error message
+			return parseUint(*s, 10, bitSize)
+		}
+		return 0, ErrorMissing
+	}
+}
+
+func (cb *cliBinding) BindFloatValue() func(bitSize int) (float64, error) {
+	if cb.position > 0 {
+		return func(bitSize int) (float64, error) {
+			if cb.source.flagSet.NArg() < cb.position {
+				return 0, ErrorMissing
+			}
+			// TODO: use a custom function with better error message
+			return parseFloat(cb.source.flagSet.Arg(cb.position-1), bitSize)
+		}
+	}
+	s := cb.source.flagSet.StringP(cb.longhand, cb.shorthand, "", "")
+	return func(bitSize int) (float64, error) {
+		if f := cb.source.flagSet.Lookup(cb.longhand); f.Changed {
+			// TODO: use a custom function with better error message
+			return parseFloat(*s, bitSize)
+		}
+		return 0, ErrorMissing
 	}
 }
 

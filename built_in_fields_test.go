@@ -47,7 +47,7 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 			{
 				json: `{"vus": "foo"}`,
 				// TODO: improve this error message, something like `"foo" is not a valid integer value` would be much better
-				expectedErrors: []string{`strconv.ParseInt: parsing "\"foo\"": invalid syntax`},
+				expectedErrors: []string{`BindIntValue: parsing "\"foo\"": invalid syntax`},
 			},
 			{
 				json:          `{"vus": 2}`,
@@ -61,14 +61,14 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 			{
 				json:           `{"vus": 2}`,
 				env:            []string{"K6_VUS=foo"},
-				expectedErrors: []string{`strconv.ParseInt: parsing "foo": invalid syntax`}, // TODO: better error message
+				expectedErrors: []string{`BindIntValue: parsing "foo": invalid syntax`}, // TODO: better error message
 			},
 			{
 				json: `{"vus": "foo"}`,
 				env:  []string{"K6_VUS=bar"},
 				expectedErrors: []string{ // TODO: better error messages
-					`strconv.ParseInt: parsing "\"foo\"": invalid syntax`,
-					`strconv.ParseInt: parsing "bar": invalid syntax`,
+					`BindIntValue: parsing "\"foo\"": invalid syntax`,
+					`BindIntValue: parsing "bar": invalid syntax`,
 				},
 			},
 			{
@@ -138,7 +138,7 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 			},
 			{
 				cli:            []string{"--tiny=-129"},
-				expectedErrors: []string{`strconv.ParseInt: parsing "-129": value out of range`}, // TODO: better error message
+				expectedErrors: []string{`BindIntValue: parsing "-129": value out of range`}, // TODO: better error message
 			},
 		},
 	},
@@ -166,7 +166,7 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 			{
 				json: `{"tinyArr": [1, 255]}`,
 				expectedErrors: []string{
-					`strconv.ParseInt: parsing "255": value out of range`, // TODO: better error
+					`BindIntValue: parsing "255": value out of range`, // TODO: better error
 				},
 			},
 		},
@@ -197,8 +197,8 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 				json: `{"bigArr": [1, 2, null]}`,
 				expectedErrors: []string{
 					// TODO: better errors
-					`strconv.ParseInt: parsing "foo": invalid syntax`,
-					`strconv.ParseInt: parsing "null": invalid syntax`,
+					`BindIntValue: parsing "foo": invalid syntax`,
+					`BindIntValue: parsing "null": invalid syntax`,
 				},
 			},
 		},

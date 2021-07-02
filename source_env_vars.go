@@ -2,11 +2,7 @@ package croconf
 
 import (
 	"encoding"
-<<<<<<< HEAD
 	"fmt"
-	"strconv"
-=======
->>>>>>> 6e1bf46 ([feat] basic types extension)
 	"strings"
 )
 
@@ -69,15 +65,9 @@ func (eb *envBinding) BindStringValueTo(dest *string) func() error {
 
 func (eb *envBinding) BindIntValue() func(bitSize int) (int64, error) {
 	return func(bitSize int) (int64, error) {
-<<<<<<< HEAD
 		val, err := eb.lookup()
 		if err != nil {
 			return 0, err
-=======
-		val, ok := eb.source.env[eb.name]
-		if !ok {
-			return 0, NewBindNameMissingError("BindIntValue", eb.name)
->>>>>>> 6e1bf46 ([feat] basic types extension)
 		}
 		intVal, err := parseInt(val, 10, bitSize)
 		if err != nil {

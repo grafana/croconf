@@ -156,3 +156,51 @@ func TestJSONFloatValue(t *testing.T) {
 		withFixedBytesSizeFunc(byteSize)
 	}
 }
+
+func TestJSONBindIntValue__NestedJSON(t *testing.T) {
+
+	var json = []byte(`{"data":{"k6_vus":6,"pi":3.14,"k6_config":"./config.json","k6_user_agent":"foo"}}`)
+
+	source := NewJSONSource(json)
+	vus := source.From("data").From("k6_vus")
+	k6UserAgent := source.From("data").From("k6_user_agent")
+	missed := source.From("data").From("missed")
+
+	if err := source.Initialize(); err != nil {
+		t.Error(err)
+	}
+
+	withFixedBytesSizeFunc := func(bytesSize int) {
+		val, err := vus.BindIntValue()(bytesSize)
+		expected := int64(6)
+		if err != nil {
+			t.Errorf("BindIntValue error: %s", err)
+		}
+		if val != expected {
+			t.Errorf("BindIntValue: got %d, expected %d", val, expected)
+		}
+
+		_, err = missed.BindIntValue()(bytesSize)
+		if err == nil {
+			t.Error("BindIntValue: expected field missing error")
+		}
+		if err.Error() != "field data.missed is missing in config source json" {
+			t.Error("BindIntValue: unexpected error message:", err)
+		}
+
+		_, err = k6UserAgent.BindIntValue()(bytesSize)
+		if err == nil {
+			t.Error("BindIntValue: expected syntax error")
+		}
+		// TODO why are double quotes "\"foo"\"" ?
+		if err.Error() != `BindIntValue: parsing "\"foo\"": invalid syntax` {
+			t.Error("BindIntValue: unexpected error message:", err)
+		}
+	}
+
+	intBytesSizes := []int{0, 8, 16, 32, 64}
+
+	for _, byteSize := range intBytesSizes {
+		withFixedBytesSizeFunc(byteSize)
+	}
+}

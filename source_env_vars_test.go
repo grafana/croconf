@@ -12,7 +12,7 @@ var missed = NewSourceFromEnv(environ).From("MISSED")
 func TestBindIntValue(t *testing.T) {
 
 	withFixedBytesSizeFunc := func(bytesSize int) {
-		val, err := vus.BindIntValue()(0)
+		val, err := vus.BindIntValue()(bytesSize)
 		expected := int64(6)
 		if err != nil {
 			t.Errorf("BindIntValueTo error: %s", err)
@@ -21,20 +21,102 @@ func TestBindIntValue(t *testing.T) {
 			t.Errorf("BindIntValue: got %d, expected %d", val, expected)
 		}
 
-		_, err = k6UserAgent.BindIntValue()(0)
+		_, err = missed.BindIntValue()(bytesSize)
+		if err == nil {
+			t.Error("BindIntValue: expected field missing error")
+		}
+		if err.Error() != "field MISSED is missing in config source environment variables" {
+			t.Error("BindIntValue: unexpected error message:", err)
+		}
+
+		_, err = k6UserAgent.BindIntValue()(bytesSize)
 		if err == nil {
 			t.Error("BindIntValue: expected syntax error")
 		}
-		if err.Error() != "BindIntValueTo: parsing \"foo\": invalid syntax" {
-			t.Errorf("BindIntValueTo: unexpected error message")
+		if err.Error() != "BindIntValue: parsing \"foo\": invalid syntax" {
+			t.Errorf("BindIntValue: unexpected error message")
+		}
+	}
+
+	intBytesSizes := []int{0, 8, 16, 32, 64}
+
+	for _, byteSize := range intBytesSizes {
+		withFixedBytesSizeFunc(byteSize)
+	}
+}
+
+func TestBindUintValue(t *testing.T) {
+
+	withFixedBytesSizeFunc := func(bytesSize int) {
+		val, err := vus.BindUintValue()(bytesSize)
+		expected := uint64(6)
+		if err != nil {
+			t.Errorf("BindUintValueTo error: %s", err)
+		}
+		if val != expected {
+			t.Errorf("BindUintValue: got %d, expected %d", val, expected)
 		}
 
-		_, err = missed.BindIntValue()(0)
+		_, err = missed.BindUintValue()(bytesSize)
 		if err == nil {
-			t.Error("BindIntValueTo: expected field missing error")
+			t.Error("BindUintValue: expected field missing error")
 		}
-		if err.Error() != "BindIntValueTo: binding name MISSED not found in config source" {
-			t.Error("BindIntValueTo: unexpected error message", err)
+		if err.Error() != "field MISSED is missing in config source environment variables" {
+			t.Error("BindUintValue: unexpected error message:", err)
+		}
+
+		_, err = k6UserAgent.BindUintValue()(bytesSize)
+		if err == nil {
+			t.Error("BindUintValue: expected syntax error")
+		}
+		if err.Error() != "BindUintValue: parsing \"foo\": invalid syntax" {
+			t.Errorf("BindUintValue: unexpected error message")
+		}
+	}
+
+	intBytesSizes := []int{0, 8, 16, 32, 64}
+
+	for _, byteSize := range intBytesSizes {
+		withFixedBytesSizeFunc(byteSize)
+	}
+}
+
+func TestBindFloatValue(t *testing.T) {
+
+	withFixedBytesSizeFunc := func(bytesSize int) {
+		val, err := vus.BindFloatValue()(bytesSize)
+		expected := float64(6)
+		if err != nil {
+			t.Errorf("BindFloatValue error: %s", err)
+		}
+		if val != expected {
+			t.Errorf("BindFloatValue: got %f, expected %f", val, expected)
+		}
+
+		val, err = pi.BindFloatValue()(bytesSize)
+		expected = float64(3.14)
+		if err != nil {
+			t.Errorf("BindFloatValue error: %s", err)
+		}
+		// val != expected doesn't work
+		if (val-3.14) > 1e20 && (val-3.14) < -1e20 {
+			t.Errorf("BindFloatValue: got %f, expected %f", val, expected)
+		}
+
+		_, err = missed.BindFloatValue()(bytesSize)
+		if err == nil {
+			t.Error("BindFloatValue: expected field missing error")
+		}
+		if err.Error() != "field MISSED is missing in config source environment variables" {
+			t.Error("BindFloatValue: unexpected error message:", err)
+		}
+
+		_, err = k6UserAgent.BindFloatValue()(bytesSize)
+		if err == nil {
+			t.Error("BindFloatValue: expected syntax error")
+		}
+		if err.Error() != "BindFloatValue: parsing \"foo\": invalid syntax" {
+			t.Errorf("BindFloatValue: unexpected error message")
 		}
 	}
 

@@ -8,17 +8,17 @@ import (
 
 var ErrorMissing = errors.New("field is missing in config source") //TODO: improve
 
-type BindNameMissingError struct {
-	Func string // the failing function (like BindIntValueTo)
-	Name string // search field
+type BindFieldMissingError struct {
+	SourceName string
+	Field      string // search field
 }
 
-func NewBindNameMissingError(f string, name string) *BindNameMissingError {
-	return &BindNameMissingError{Func: f, Name: name}
+func NewBindFieldMissingError(srcName string, field string) *BindFieldMissingError {
+	return &BindFieldMissingError{SourceName: srcName, Field: field}
 }
 
-func (e *BindNameMissingError) Error() string {
-	return fmt.Sprintf("%s: binding name %s not found in config source", e.Func, e.Name)
+func (e *BindFieldMissingError) Error() string {
+	return fmt.Sprintf("field %s is missing in config source %s", e.Field, e.SourceName)
 }
 
 type BindValueError struct {

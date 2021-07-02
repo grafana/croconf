@@ -2,14 +2,13 @@ package croconf
 
 import "testing"
 
-var environ = []string{"K6_VUS=6", "PI=3.14", "K6_CONFIG=./config.json", "K6_USER_AGENT=foo"}
+func TestEnvVarsBindIntValue(t *testing.T) {
 
-var vus = NewSourceFromEnv(environ).From("K6_VUS")
-var pi = NewSourceFromEnv(environ).From("PI")
-var k6UserAgent = NewSourceFromEnv(environ).From("K6_USER_AGENT")
-var missed = NewSourceFromEnv(environ).From("MISSED")
+	var environ = []string{"K6_VUS=6", "PI=3.14", "K6_CONFIG=./config.json", "K6_USER_AGENT=foo"}
 
-func TestBindIntValue(t *testing.T) {
+	var vus = NewSourceFromEnv(environ).From("K6_VUS")
+	var k6UserAgent = NewSourceFromEnv(environ).From("K6_USER_AGENT")
+	var missed = NewSourceFromEnv(environ).From("MISSED")
 
 	withFixedBytesSizeFunc := func(bytesSize int) {
 		val, err := vus.BindIntValue()(bytesSize)
@@ -45,7 +44,13 @@ func TestBindIntValue(t *testing.T) {
 	}
 }
 
-func TestBindUintValue(t *testing.T) {
+func TestEnvVarsBindUintValue(t *testing.T) {
+
+	var environ = []string{"K6_VUS=6", "PI=3.14", "K6_CONFIG=./config.json", "K6_USER_AGENT=foo"}
+
+	var vus = NewSourceFromEnv(environ).From("K6_VUS")
+	var k6UserAgent = NewSourceFromEnv(environ).From("K6_USER_AGENT")
+	var missed = NewSourceFromEnv(environ).From("MISSED")
 
 	withFixedBytesSizeFunc := func(bytesSize int) {
 		val, err := vus.BindUintValue()(bytesSize)
@@ -81,7 +86,13 @@ func TestBindUintValue(t *testing.T) {
 	}
 }
 
-func TestBindFloatValue(t *testing.T) {
+func TestEnvVarsFloatValue(t *testing.T) {
+	var environ = []string{"K6_VUS=6", "PI=3.14", "K6_CONFIG=./config.json", "K6_USER_AGENT=foo"}
+
+	var vus = NewSourceFromEnv(environ).From("K6_VUS")
+	var pi = NewSourceFromEnv(environ).From("PI")
+	var k6UserAgent = NewSourceFromEnv(environ).From("K6_USER_AGENT")
+	var missed = NewSourceFromEnv(environ).From("MISSED")
 
 	withFixedBytesSizeFunc := func(bytesSize int) {
 		val, err := vus.BindFloatValue()(bytesSize)

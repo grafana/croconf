@@ -108,9 +108,11 @@ func (jb *jsonBinding) BindIntValue() func(bitSize int) (int64, error) {
 		if err != nil {
 			return 0, err
 		}
-
-		// TODO: use a custom parser for better error messages
-		return parseInt(string(raw), 10, bitSize)
+		intVal, bindErr := parseInt(string(raw), 10, bitSize)
+		if bindErr != nil {
+			return 0, bindErr.withFuncName("BindIntValue")
+		}
+		return intVal, nil
 	}
 }
 
@@ -118,11 +120,14 @@ func (jb *jsonBinding) BindUintValue() func(bitSize int) (uint64, error) {
 	return func(bitSize int) (uint64, error) {
 		raw, err := jb.lookup()
 		if err != nil {
-			return 0, err
+			// TODO: we might want to integrate custom error into lookup() method
+			return 0, NewBindFieldMissingError(jb.source.GetName(), jb.name)
 		}
-
-		// TODO: use a custom parser for better error messages
-		return parseUint(string(raw), 10, bitSize)
+		intVal, bindErr := parseUint(string(raw), 10, bitSize)
+		if bindErr != nil {
+			return 0, bindErr.withFuncName("BindIntValue")
+		}
+		return intVal, nil
 	}
 }
 
@@ -130,11 +135,14 @@ func (jb *jsonBinding) BindFloatValue() func(bitSize int) (float64, error) {
 	return func(bitSize int) (float64, error) {
 		raw, err := jb.lookup()
 		if err != nil {
-			return 0, err
+			// TODO: we might want to integrate custom error into lookup() method
+			return 0, NewBindFieldMissingError(jb.source.GetName(), jb.name)
 		}
-
-		// TODO: use a custom parser for better error messages
-		return parseFloat(string(raw), bitSize)
+		intVal, bindErr := parseFloat(string(raw), bitSize)
+		if bindErr != nil {
+			return 0, bindErr.withFuncName("BindIntValue")
+		}
+		return intVal, nil
 	}
 }
 

@@ -91,19 +91,28 @@ func (cb *cliBinding) BindIntValue() func(bitSize int) (int64, error) {
 	if cb.position > 0 {
 		return func(bitSize int) (int64, error) {
 			if cb.source.flagSet.NArg() < cb.position {
-				return 0, ErrorMissing
+				// TODO what to use? cb.shorthand or cb.longhand or smth joint
+				return 0, NewBindFieldMissingError(cb.source.GetName(), cb.longhand)
 			}
 			// TODO: use a custom function with better error message
-			return parseInt(cb.source.flagSet.Arg(cb.position-1), 10, bitSize)
+			val, bindErr := parseInt(cb.source.flagSet.Arg(cb.position-1), 10, bitSize)
+			if bindErr != nil {
+				return 0, bindErr.withFuncName("BindIntValue")
+			}
+			return val, nil
 		}
 	}
 	s := cb.source.flagSet.StringP(cb.longhand, cb.shorthand, "", "")
 	return func(bitSize int) (int64, error) {
 		if f := cb.source.flagSet.Lookup(cb.longhand); f.Changed {
 			// TODO: use a custom function with better error message
-			return parseInt(*s, 10, bitSize)
+			val, bindErr := parseInt(*s, 10, bitSize)
+			if bindErr != nil {
+				return 0, bindErr.withFuncName("BindIntValue")
+			}
+			return val, nil
 		}
-		return 0, ErrorMissing
+		return 0, NewBindFieldMissingError(cb.source.GetName(), cb.longhand)
 	}
 }
 

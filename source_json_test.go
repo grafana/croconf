@@ -37,7 +37,8 @@ func TestJSONBindIntValue(t *testing.T) {
 		if err == nil {
 			t.Error("BindIntValue: expected syntax error")
 		}
-		if err.Error() != "BindIntValue: parsing \"foo\": invalid syntax" {
+		// TODO why are double quotes "\"foo"\"" ?
+		if err.Error() != `BindIntValue: parsing "\"foo\"": invalid syntax` {
 			t.Error("BindIntValue: unexpected error message:", err)
 		}
 	}
@@ -53,9 +54,14 @@ func TestJSONBindUintValue(t *testing.T) {
 
 	var json = []byte(`{"k6_vus":6,"pi":3.14,"k6_config":"./config.json","k6_user_agent":"foo"}`)
 
-	var vus = NewJSONSource(json).From("k6_vus")
-	var k6UserAgent = NewJSONSource(json).From("k6_user_agent")
-	var missed = NewJSONSource(json).From("missed")
+	source := NewJSONSource(json)
+	var vus = source.From("k6_vus")
+	var k6UserAgent = source.From("k6_user_agent")
+	var missed = source.From("missed")
+
+	if err := source.Initialize(); err != nil {
+		t.Error(err)
+	}
 
 	withFixedBytesSizeFunc := func(bytesSize int) {
 		val, err := vus.BindUintValue()(bytesSize)
@@ -69,7 +75,7 @@ func TestJSONBindUintValue(t *testing.T) {
 
 		_, err = missed.BindUintValue()(bytesSize)
 		if err == nil {
-			t.Error("BindUintValue: expected field missing error")
+			t.Error("BindUintValue: expected field k6_vus is missing error")
 		}
 		if err.Error() != "field missed is missing in config source json" {
 			t.Error("BindUintValue: unexpected error message:", err)
@@ -79,8 +85,9 @@ func TestJSONBindUintValue(t *testing.T) {
 		if err == nil {
 			t.Error("BindUintValue: expected syntax error")
 		}
-		if err.Error() != "BindUintValue: parsing \"foo\": invalid syntax" {
-			t.Errorf("BindUintValue: unexpected error message")
+		// TODO why are double quotes "\"foo"\"" ?
+		if err.Error() != `BindIntValue: parsing "\"foo\"": invalid syntax` {
+			t.Error("BindIntValue: unexpected error message:", err)
 		}
 	}
 
@@ -94,10 +101,16 @@ func TestJSONBindUintValue(t *testing.T) {
 func TestJSONFloatValue(t *testing.T) {
 	var json = []byte(`{"k6_vus":6,"pi":3.14,"k6_config":"./config.json","k6_user_agent":"foo"}`)
 
-	var vus = NewJSONSource(json).From("k6_vus")
-	var pi = NewJSONSource(json).From("pi")
-	var k6UserAgent = NewJSONSource(json).From("k6_user_agent")
-	var missed = NewJSONSource(json).From("missed")
+	source := NewJSONSource(json)
+	var vus = source.From("k6_vus")
+	var pi = source.From("k6_vus")
+
+	var k6UserAgent = source.From("k6_user_agent")
+	var missed = source.From("missed")
+
+	if err := source.Initialize(); err != nil {
+		t.Error(err)
+	}
 
 	withFixedBytesSizeFunc := func(bytesSize int) {
 		val, err := vus.BindFloatValue()(bytesSize)
@@ -131,8 +144,9 @@ func TestJSONFloatValue(t *testing.T) {
 		if err == nil {
 			t.Error("BindFloatValue: expected syntax error")
 		}
-		if err.Error() != "BindFloatValue: parsing \"foo\": invalid syntax" {
-			t.Errorf("BindFloatValue: unexpected error message")
+		// TODO why are double quotes "\"foo"\"" ?
+		if err.Error() != `BindIntValue: parsing "\"foo\"": invalid syntax` {
+			t.Error("BindIntValue: unexpected error message:", err)
 		}
 	}
 

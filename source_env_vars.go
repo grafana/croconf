@@ -3,6 +3,7 @@ package croconf
 import (
 	"encoding"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -105,6 +106,21 @@ func (eb *envBinding) BindFloatValue() func(bitSize int) (float64, error) {
 			return 0, bindErr.withFuncName("BindFloatValue")
 		}
 		return val, nil
+	}
+}
+
+func (eb *envBinding) BindBoolValueTo(dest *bool) func() error {
+	return func() error {
+		val, err := eb.lookup()
+		if err != nil {
+			return err
+		}
+		b, err := strconv.ParseBool(val)
+		if err != nil {
+			return err
+		}
+		*dest = b
+		return nil
 	}
 }
 

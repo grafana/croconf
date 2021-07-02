@@ -26,6 +26,7 @@ type LazySingleValueBinding interface {
 	IntValueBinding
 	UintValueBinding
 	FloatValueBinding
+	BoolValueBinding
 	TextBasedValueBinding
 }
 
@@ -57,6 +58,11 @@ type UintValueBinding interface {
 type FloatValueBinding interface {
 	SourceGetter
 	BindFloatValue() func(bitSize int) (float64, error)
+}
+
+type BoolValueBinding interface {
+	SourceGetter
+	BindBoolValueTo(dest *bool) func() error
 }
 
 type TextBasedValueBinding interface {

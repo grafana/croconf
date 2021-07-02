@@ -106,7 +106,8 @@ func (jb *jsonBinding) BindIntValue() func(bitSize int) (int64, error) {
 	return func(bitSize int) (int64, error) {
 		raw, err := jb.lookup()
 		if err != nil {
-			return 0, err
+			// TODO: we might want to integrate custom error into lookup() method
+			return 0, NewBindFieldMissingError(jb.source.GetName(), jb.name)
 		}
 		intVal, bindErr := parseInt(string(raw), 10, bitSize)
 		if bindErr != nil {

@@ -49,28 +49,32 @@ func NewScriptConfig(
 			jsonSource.From("userAgent"),
 			envVarsSource.From("K6_USER_AGENT"),
 			cliSource.FromName("user-agent"),
-			// TODO: figure this out...
-			// croconf.WithDescription("user agent for http requests")
 		),
-		// ...
+		croconf.WithDescription("user agent for http requests"),
 	)
 
-	cm.AddField(croconf.NewInt64Field(
-		&conf.VUs,
-		croconf.DefaultIntValue(1),
-		jsonSource.From("vus"),
-		envVarsSource.From("K6_VUS"),
-		cliSource.FromNameAndShorthand("vus", "u"),
-		// croconf.WithDescription("number of virtual users") // TODO
-	))
+	cm.AddField(
+		croconf.NewInt64Field(
+			&conf.VUs,
+			croconf.DefaultIntValue(1),
+			jsonSource.From("vus"),
+			envVarsSource.From("K6_VUS"),
+			cliSource.FromNameAndShorthand("vus", "u"),
+		),
+		croconf.WithDescription("number of virtual users"),
+		croconf.IsRequired(),
+	)
 
-	cm.AddField(croconf.NewTextBasedField(
-		&conf.Duration,
-		croconf.DefaultStringValue("1s"),
-		jsonSource.From("duration"),
-		envVarsSource.From("K6_DURATION"),
-		cliSource.FromNameAndShorthand("duration", "d"),
-	))
+	cm.AddField(
+		croconf.NewTextBasedField(
+			&conf.Duration,
+			croconf.DefaultStringValue("1s"),
+			jsonSource.From("duration"),
+			envVarsSource.From("K6_DURATION"),
+			cliSource.FromNameAndShorthand("duration", "d"),
+		),
+		croconf.WithDescription("test duration"),
+	)
 
 	// Properties of a nested struct (without a pointer!)
 	cm.AddField(croconf.NewTextBasedField(
@@ -78,6 +82,7 @@ func NewScriptConfig(
 		croconf.DefaultStringValue("10m"),
 		jsonSource.From("dns").From("ttl"),
 	))
+
 	cm.AddField(croconf.NewStringField(
 		&conf.DNS.Server,
 		croconf.DefaultStringValue("8.8.8.8"),

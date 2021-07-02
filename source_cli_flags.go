@@ -111,6 +111,7 @@ func (cb *cliBinding) BindTextBasedValueTo(dest encoding.TextUnmarshaler) func()
 		return dest.UnmarshalText([]byte(s))
 	})
 }
+
 func (cb *cliBinding) BindIntValue() func(int) (int64, error) {
 	return func(bitSize int) (int64, error) {
 		v, err := cb.lookup()

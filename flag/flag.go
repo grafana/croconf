@@ -64,7 +64,6 @@ func (p *Parser) Parse(tt []string) (*Set, error) {
 		}
 
 		fs.slices[key] = append(fs.slices[key], v)
-
 	}
 
 	var err error

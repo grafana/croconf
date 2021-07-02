@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-var ErrorMissing = errors.New("field is missing in config source") //TODO: improve
+var ErrorMissing = errors.New("field is missing in config source") // TODO: improve
 
 type BindFieldMissingError struct {
 	SourceName string

@@ -3,8 +3,7 @@ package croconf
 import "testing"
 
 func TestJSONBindIntValue(t *testing.T) {
-
-	var json = []byte(`{"k6_vus":6,"pi":3.14,"k6_config":"./config.json","k6_user_agent":"foo"}`)
+	json := []byte(`{"k6_vus":6,"pi":3.14,"k6_config":"./config.json","k6_user_agent":"foo"}`)
 
 	source := NewJSONSource(json)
 	vus := source.From("k6_vus")
@@ -51,13 +50,12 @@ func TestJSONBindIntValue(t *testing.T) {
 }
 
 func TestJSONBindUintValue(t *testing.T) {
-
-	var json = []byte(`{"k6_vus":6,"pi":3.14,"k6_config":"./config.json","k6_user_agent":"foo"}`)
+	json := []byte(`{"k6_vus":6,"pi":3.14,"k6_config":"./config.json","k6_user_agent":"foo"}`)
 
 	source := NewJSONSource(json)
-	var vus = source.From("k6_vus")
-	var k6UserAgent = source.From("k6_user_agent")
-	var missed = source.From("missed")
+	vus := source.From("k6_vus")
+	k6UserAgent := source.From("k6_user_agent")
+	missed := source.From("missed")
 
 	if err := source.Initialize(); err != nil {
 		t.Error(err)
@@ -99,14 +97,14 @@ func TestJSONBindUintValue(t *testing.T) {
 }
 
 func TestJSONFloatValue(t *testing.T) {
-	var json = []byte(`{"k6_vus":6,"pi":3.14,"k6_config":"./config.json","k6_user_agent":"foo"}`)
+	json := []byte(`{"k6_vus":6,"pi":3.14,"k6_config":"./config.json","k6_user_agent":"foo"}`)
 
 	source := NewJSONSource(json)
-	var vus = source.From("k6_vus")
-	var pi = source.From("k6_vus")
+	vus := source.From("k6_vus")
+	pi := source.From("k6_vus")
 
-	var k6UserAgent = source.From("k6_user_agent")
-	var missed = source.From("missed")
+	k6UserAgent := source.From("k6_user_agent")
+	missed := source.From("missed")
 
 	if err := source.Initialize(); err != nil {
 		t.Error(err)
@@ -158,8 +156,7 @@ func TestJSONFloatValue(t *testing.T) {
 }
 
 func TestJSONBindIntValue__NestedJSON(t *testing.T) {
-
-	var json = []byte(`{"data":{"k6_vus":6,"pi":3.14,"k6_config":"./config.json","k6_user_agent":"foo"}}`)
+	json := []byte(`{"data":{"k6_vus":6,"pi":3.14,"k6_config":"./config.json","k6_user_agent":"foo"}}`)
 
 	source := NewJSONSource(json)
 	vus := source.From("data").From("k6_vus")

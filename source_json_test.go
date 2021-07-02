@@ -6,9 +6,14 @@ func TestJSONBindIntValue(t *testing.T) {
 
 	var json = []byte(`{"k6_vus":6,"pi":3.14,"k6_config":"./config.json","k6_user_agent":"foo"}`)
 
-	var vus = NewJSONSource(json).From("k6_vus")
-	var k6UserAgent = NewJSONSource(json).From("k6_user_agent")
-	var missed = NewJSONSource(json).From("missed")
+	source :=  NewJSONSource(json)
+	vus := source.From("k6_vus")
+	k6UserAgent := source.From("k6_user_agent")
+	missed := source.From("missed")
+	
+	if err := source.Initialize(); err != nil {
+		t.Failf(err)
+	}
 
 	withFixedBytesSizeFunc := func(bytesSize int) {
 		val, err := vus.BindIntValue()(bytesSize)

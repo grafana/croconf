@@ -11,24 +11,24 @@ import (
 type SourceCLI struct {
 	flags []string
 
-	fs     *flag.Set
 	parser *flag.Parser
+	fs     *flag.Set
 }
 
 func NewSourceFromCLIFlags(flags []string) *SourceCLI {
 	return &SourceCLI{
-		flags: flags,
+		flags:  flags,
+		parser: flag.NewParser(),
 	}
 }
 
 func (sc *SourceCLI) Initialize() error {
-	sc.parser = flag.NewParser()
 	fs, err := sc.parser.Parse(sc.flags)
 	if err != nil {
 		return err
 	}
 	sc.fs = fs
-	return err
+	return nil
 }
 
 func (sc *SourceCLI) GetName() string {
@@ -169,12 +169,8 @@ func (cb *cliBinding) BindBoolValueTo(dest *bool) func() error {
 }
 
 func (cb *cliBinding) BindArray() func() (Array, error) {
-	err := cb.source.parser.RegisterSlice(cb.longhand, cb.shorthand)
+	cb.source.parser.RegisterSlice(cb.longhand, cb.shorthand)
 	return func() (Array, error) {
-		if err != nil {
-			return nil, fmt.Errorf("slice binding failed")
-		}
-
 		opts := cb.source.fs.Options(cb.longhand, cb.shorthand)
 		if len(opts) < 1 {
 			return nil, ErrorMissing

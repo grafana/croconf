@@ -16,20 +16,18 @@ func NewParser() *Parser {
 	}
 }
 
-func (p *Parser) RegisterUnary(long, short string) error {
+func (p *Parser) RegisterUnary(long, short string) {
 	p.unaries[long] = struct{}{}
 	if short != "" {
 		p.unaries[short] = struct{}{}
 	}
-	return nil
 }
 
-func (p *Parser) RegisterSlice(long, short string) error {
+func (p *Parser) RegisterSlice(long, short string) {
 	p.slices[long] = struct{}{}
 	if short != "" {
 		p.slices[short] = struct{}{}
 	}
-	return nil
 }
 
 func (p *Parser) Parse(tt []string) (*Set, error) {
@@ -57,13 +55,11 @@ func (p *Parser) Parse(tt []string) (*Set, error) {
 	}
 
 	addflag := func(key, v string) {
-		_, ok := p.slices[key]
-		if !ok {
+		if _, ok := p.slices[key]; !ok {
 			fs.flags[key] = v
-			return
+		} else {
+			fs.slices[key] = append(fs.slices[key], v)
 		}
-
-		fs.slices[key] = append(fs.slices[key], v)
 	}
 
 	var err error

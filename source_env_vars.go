@@ -64,48 +64,51 @@ func (eb *envBinding) BindStringValueTo(dest *string) func() error {
 	}
 }
 
-func (eb *envBinding) BindIntValue() func(bitSize int) (int64, error) {
-	return func(bitSize int) (int64, error) {
+func (eb *envBinding) BindIntValueTo(dest *int64) func() error {
+	return func() error {
 		val, err := eb.lookup()
 		if err != nil {
 			// TODO: we might want to integrate custom error into lookup() method
-			return 0, NewBindFieldMissingError(eb.source.GetName(), eb.name)
+			return NewBindFieldMissingError(eb.source.GetName(), eb.name)
 		}
-		intVal, bindErr := parseInt(val, 10, bitSize)
+		intVal, bindErr := parseInt(val)
 		if bindErr != nil {
-			return 0, bindErr.withFuncName("BindIntValue")
+			return bindErr.withFuncName("BindIntValue")
 		}
-		return intVal, nil
+		*dest = intVal
+		return nil
 	}
 }
 
-func (eb *envBinding) BindUintValue() func(bitSize int) (uint64, error) {
-	return func(bitSize int) (uint64, error) {
+func (eb *envBinding) BindUintValueTo(dest *uint64) func() error {
+	return func() error {
 		val, err := eb.lookup()
 		if err != nil {
 			// TODO: we might want to integrate custom error into lookup() method
-			return 0, NewBindFieldMissingError(eb.source.GetName(), eb.name)
+			return NewBindFieldMissingError(eb.source.GetName(), eb.name)
 		}
-		intVal, bindErr := parseUint(val, 10, bitSize)
+		uintVal, bindErr := parseUint(val)
 		if bindErr != nil {
-			return 0, bindErr.withFuncName("BindUintValue")
+			return bindErr.withFuncName("BindUintValue")
 		}
-		return intVal, nil
+		*dest = uintVal
+		return nil
 	}
 }
 
-func (eb *envBinding) BindFloatValue() func(bitSize int) (float64, error) {
-	return func(bitSize int) (float64, error) {
+func (eb *envBinding) BindFloatValueTo(dest *float64) func() error {
+	return func() error {
 		strVal, err := eb.lookup()
 		if err != nil {
 			// TODO: we might want to integrate custom error into lookup() method
-			return 0, NewBindFieldMissingError(eb.source.GetName(), eb.name)
+			return NewBindFieldMissingError(eb.source.GetName(), eb.name)
 		}
-		val, bindErr := parseFloat(strVal, bitSize)
+		val, bindErr := parseFloat(strVal)
 		if bindErr != nil {
-			return 0, bindErr.withFuncName("BindFloatValue")
+			return bindErr.withFuncName("BindFloatValue")
 		}
-		return val, nil
+		*dest = val
+		return nil
 	}
 }
 

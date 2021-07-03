@@ -2,7 +2,6 @@ package croconf
 
 import (
 	"encoding"
-	"fmt"
 )
 
 // TODO: make more flexible with callbacks, so that besides defaut values, we
@@ -36,15 +35,10 @@ func DefaultStringValue(s string) interface {
 
 type defaultIntValue int64
 
-func (div defaultIntValue) BindIntValue() func(bitSize int) (int64, error) {
-	return func(bitSize int) (int64, error) {
-		val := int64(div)
-		// See https://golang.org/pkg/math/#pkg-constants
-		min, max := int64(-1<<(bitSize-1)), int64(1<<(bitSize-1)-1)
-		if val < min || val > max {
-			return 0, fmt.Errorf("invalid value %d, has to be between %d and %d", val, min, max)
-		}
-		return val, nil
+func (div defaultIntValue) BindIntValueTo(dest *int64) func() error {
+	return func() error {
+		*dest = int64(div)
+		return nil
 	}
 }
 

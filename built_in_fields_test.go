@@ -112,7 +112,7 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 		},
 		testCases: []fieldTestCase{
 			{
-				expectedErrors: []string{"invalid value 129, has to be between -128 and 127"},
+				expectedErrors: []string{"invalid value 129, it must be between -128 and 127"},
 			},
 		},
 	},
@@ -138,7 +138,7 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 			},
 			{
 				cli:            []string{"--tiny=-129"},
-				expectedErrors: []string{`BindIntValue: parsing "-129": value out of range`}, // TODO: better error message
+				expectedErrors: []string{`invalid value -129, it must be between -128 and 127`},
 			},
 		},
 	},
@@ -259,7 +259,7 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 			{
 				json: `{"tinyArr": [1, 255]}`,
 				expectedErrors: []string{
-					`BindIntValue: parsing "255": value out of range`, // TODO: better error
+					`invalid value 255, it must be between -128 and 127`,
 				},
 			},
 		},

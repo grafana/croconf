@@ -106,48 +106,51 @@ func (jb *jsonBinding) BindStringValueTo(dest *string) func() error {
 	}
 }
 
-func (jb *jsonBinding) BindIntValue() func(bitSize int) (int64, error) {
-	return func(bitSize int) (int64, error) {
+func (jb *jsonBinding) BindIntValueTo(dest *int64) func() error {
+	return func() error {
 		raw, err := jb.lookup()
 		if err != nil {
 			// TODO: we might want to integrate custom error into lookup() method
-			return 0, NewBindFieldMissingError(jb.source.GetName(), jb.name)
+			return NewBindFieldMissingError(jb.source.GetName(), jb.name)
 		}
-		intVal, bindErr := parseInt(string(raw), 10, bitSize)
+		intVal, bindErr := parseInt(string(raw))
 		if bindErr != nil {
-			return 0, bindErr.withFuncName("BindIntValue")
+			return bindErr.withFuncName("BindIntValue")
 		}
-		return intVal, nil
+		*dest = intVal
+		return nil
 	}
 }
 
-func (jb *jsonBinding) BindUintValue() func(bitSize int) (uint64, error) {
-	return func(bitSize int) (uint64, error) {
+func (jb *jsonBinding) BindUintValueTo(dest *uint64) func() error {
+	return func() error {
 		raw, err := jb.lookup()
 		if err != nil {
 			// TODO: we might want to integrate custom error into lookup() method
-			return 0, NewBindFieldMissingError(jb.source.GetName(), jb.name)
+			return NewBindFieldMissingError(jb.source.GetName(), jb.name)
 		}
-		intVal, bindErr := parseUint(string(raw), 10, bitSize)
+		uintVal, bindErr := parseUint(string(raw))
 		if bindErr != nil {
-			return 0, bindErr.withFuncName("BindIntValue")
+			return bindErr.withFuncName("BindIntValue")
 		}
-		return intVal, nil
+		*dest = uintVal
+		return nil
 	}
 }
 
-func (jb *jsonBinding) BindFloatValue() func(bitSize int) (float64, error) {
-	return func(bitSize int) (float64, error) {
+func (jb *jsonBinding) BindFloatValueTo(dest *float64) func() error {
+	return func() error {
 		raw, err := jb.lookup()
 		if err != nil {
 			// TODO: we might want to integrate custom error into lookup() method
-			return 0, NewBindFieldMissingError(jb.source.GetName(), jb.name)
+			return NewBindFieldMissingError(jb.source.GetName(), jb.name)
 		}
-		intVal, bindErr := parseFloat(string(raw), bitSize)
+		floatVal, bindErr := parseFloat(string(raw))
 		if bindErr != nil {
-			return 0, bindErr.withFuncName("BindIntValue")
+			return bindErr.withFuncName("BindIntValue")
 		}
-		return intVal, nil
+		*dest = floatVal
+		return nil
 	}
 }
 

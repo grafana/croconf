@@ -40,22 +40,22 @@ type Array interface { // TODO: rename to List and ListBinding?
 
 type StringValueBinding interface {
 	SourceGetter
-	BindStringValueTo(dest *string) func() error
+	BindStringValueTo(*string) func() error
 }
 
 type IntValueBinding interface {
 	SourceGetter
-	BindIntValue() func(bitSize int) (int64, error)
+	BindIntValueTo(*int64) func() error
 }
 
 type UintValueBinding interface {
 	SourceGetter
-	BindUintValue() func(bitSize int) (uint64, error)
+	BindUintValueTo(*uint64) func() error
 }
 
 type FloatValueBinding interface {
 	SourceGetter
-	BindFloatValue() func(bitSize int) (float64, error)
+	BindFloatValueTo(*float64) func() error
 }
 
 type BoolValueBinding interface {

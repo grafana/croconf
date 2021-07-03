@@ -3,6 +3,7 @@ package croconf
 import (
 	"encoding"
 	"errors"
+	"strconv"
 )
 
 type valueBinding struct {
@@ -56,29 +57,78 @@ func newField(dest interface{}, sourcesLen int, callback func(sourceNum int) val
 	return f
 }
 
-func NewInt64Field(dest *int64, sources ...IntValueBinding) Field {
-	return newField(dest, len(sources), func(sourceNum int) valueBinding {
-		binding := sources[sourceNum].BindIntValue()
+func intValHelper(sources []IntValueBinding, bitSize int, saveToDest func(int64)) func(sourceNum int) valueBinding {
+	return func(sourceNum int) valueBinding {
+		var val int64
+		bind := sources[sourceNum].BindIntValueTo(&val)
 		return vb(sources[sourceNum], func() error {
-			val, err := binding(64)
-			if err != nil {
+			if err := bind(); err != nil {
 				return err
 			}
-			*dest = val
+			if err := checkIntBitsize(val, bitSize); err != nil {
+				return err
+			}
+			saveToDest(val)
 			return nil
 		})
-	})
+	}
+}
+
+func NewIntField(dest *int, sources ...IntValueBinding) Field {
+	return newField(dest, len(sources), intValHelper(sources, strconv.IntSize, func(val int64) {
+		*dest = int(val) // this is safe, intValHelper checks val against bitSize
+	}))
 }
 
 func NewInt8Field(dest *int8, sources ...IntValueBinding) Field {
+	return newField(dest, len(sources), intValHelper(sources, 8, func(val int64) {
+		*dest = int8(val) // this is safe, intValHelper checks val against bitSize
+	}))
+}
+
+func NewInt16Field(dest *int16, sources ...IntValueBinding) Field {
+	return newField(dest, len(sources), intValHelper(sources, 16, func(val int64) {
+		*dest = int16(val) // this is safe, intValHelper checks val against bitSize
+	}))
+}
+
+func NewInt32Field(dest *int32, sources ...IntValueBinding) Field {
+	return newField(dest, len(sources), intValHelper(sources, 32, func(val int64) {
+		*dest = int32(val) // this is safe, intValHelper checks val against bitSize
+	}))
+}
+
+func NewInt64Field(dest *int64, sources ...IntValueBinding) Field {
 	return newField(dest, len(sources), func(sourceNum int) valueBinding {
-		binding := sources[sourceNum].BindIntValue()
-		return vb(sources[sourceNum], func() error {
-			val, err := binding(8)
+		return vb(sources[sourceNum], sources[sourceNum].BindIntValueTo(dest))
+	})
+}
+
+func NewInt8SliceField(dest *[]int8, sources ...ArrayBinding) Field {
+	// TODO: figure out some way to avoid the boilerplate?
+	return newField(dest, len(sources), func(sourceNum int) valueBinding {
+		source := sources[sourceNum]
+		arrBind := source.BindArray()
+		return vb(source, func() error {
+			sourceArr, err := arrBind()
 			if err != nil {
 				return err
 			}
-			*dest = int8(val) // this is safe
+
+			arrLen := sourceArr.Len()
+			newArr := make([]int8, arrLen)
+			for i := 0; i < arrLen; i++ {
+				var val int64
+				bind := sourceArr.Element(i).BindIntValueTo(&val)
+				if err := bind(); err != nil {
+					return err
+				}
+				if err := checkIntBitsize(val, 8); err != nil {
+					return err
+				}
+				newArr[i] = int8(val) // this is safe
+			}
+			*dest = newArr
 			return nil
 		})
 	})
@@ -97,37 +147,12 @@ func NewInt64SliceField(dest *[]int64, sources ...ArrayBinding) Field {
 			arrLen := sourceArr.Len()
 			newArr := make([]int64, arrLen)
 			for i := 0; i < arrLen; i++ {
-				el, err := sourceArr.Element(i).BindIntValue()(64)
-				if err != nil {
+				var val int64
+				bind := sourceArr.Element(i).BindIntValueTo(&val)
+				if err := bind(); err != nil {
 					return err
 				}
-				newArr[i] = el
-			}
-			*dest = newArr
-			return nil
-		})
-	})
-}
-
-func NewInt8SliceField(dest *[]int8, sources ...ArrayBinding) Field {
-	// TODO: figure out some way to avoid the boilerplate?
-	return newField(dest, len(sources), func(sourceNum int) valueBinding {
-		source := sources[sourceNum]
-		arrBind := source.BindArray()
-		return vb(source, func() error {
-			sourceArr, err := arrBind()
-			if err != nil {
-				return err
-			}
-
-			arrLen := sourceArr.Len()
-			newArr := make([]int8, arrLen)
-			for i := 0; i < arrLen; i++ {
-				el, err := sourceArr.Element(i).BindIntValue()(8)
-				if err != nil {
-					return err
-				}
-				newArr[i] = int8(el) // this is safe
+				newArr[i] = val
 			}
 			*dest = newArr
 			return nil

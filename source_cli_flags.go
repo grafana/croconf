@@ -111,48 +111,51 @@ func (cb *cliBinding) BindTextBasedValueTo(dest encoding.TextUnmarshaler) func()
 	})
 }
 
-func (cb *cliBinding) BindIntValue() func(int) (int64, error) {
-	return func(bitSize int) (int64, error) {
+func (cb *cliBinding) BindIntValueTo(dest *int64) func() error {
+	return func() error {
 		v, err := cb.lookup()
 		if err != nil {
 			// TODO what to use? cb.shorthand or cb.longhand or pos or smth joint
-			return 0, NewBindFieldMissingError(cb.source.GetName(), cb.longhand)
+			return NewBindFieldMissingError(cb.source.GetName(), cb.longhand)
 		}
-		val, bindErr := parseInt(v, 10, bitSize)
+		val, bindErr := parseInt(v)
 		if bindErr != nil {
-			return 0, bindErr.withFuncName("BindIntValue")
+			return bindErr.withFuncName("BindIntValue")
 		}
-		return val, nil
+		*dest = val
+		return nil
 	}
 }
 
-func (cb *cliBinding) BindUintValue() func(bitSize int) (uint64, error) {
-	return func(bitSize int) (uint64, error) {
+func (cb *cliBinding) BindUintValueTo(dest *uint64) func() error {
+	return func() error {
 		v, err := cb.lookup()
 		if err != nil {
 			// TODO what to use? cb.shorthand or cb.longhand or pos or smth joint
-			return 0, NewBindFieldMissingError(cb.source.GetName(), cb.longhand)
+			return NewBindFieldMissingError(cb.source.GetName(), cb.longhand)
 		}
-		val, bindErr := parseUint(v, 10, bitSize)
+		val, bindErr := parseUint(v)
 		if bindErr != nil {
-			return 0, bindErr.withFuncName("BindIntValue")
+			return bindErr.withFuncName("BindIntValue")
 		}
-		return val, nil
+		*dest = val
+		return nil
 	}
 }
 
-func (cb *cliBinding) BindFloatValue() func(bitSize int) (float64, error) {
-	return func(bitSize int) (float64, error) {
+func (cb *cliBinding) BindFloatValueTo(dest *float64) func() error {
+	return func() error {
 		v, err := cb.lookup()
 		if err != nil {
 			// TODO what to use? cb.shorthand or cb.longhand or pos or smth joint
-			return 0, NewBindFieldMissingError(cb.source.GetName(), cb.longhand)
+			return NewBindFieldMissingError(cb.source.GetName(), cb.longhand)
 		}
-		val, bindErr := parseFloat(v, bitSize)
+		val, bindErr := parseFloat(v)
 		if bindErr != nil {
-			return 0, bindErr.withFuncName("BindIntValue")
+			return bindErr.withFuncName("BindIntValue")
 		}
-		return val, nil
+		*dest = val
+		return nil
 	}
 }
 

@@ -133,7 +133,6 @@ func (p *Parser) Parse(tt []string) (*Set, error) {
 		default:
 			fs.posArgs = append(fs.posArgs, arg)
 		}
-
 	}
 	return &fs, err
 }

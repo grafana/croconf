@@ -7,15 +7,25 @@ import (
 )
 
 type valueBinding struct {
-	sourceGetter SourceGetter
-	apply        func() error
+	// This may be nil, when the binding doesn't come from a source
+	source Source
+	name   string
+	apply  func() error
 }
 
-func vb(sg SourceGetter, apply func() error) valueBinding {
-	return valueBinding{sourceGetter: sg, apply: apply}
+func vb(binding interface{}, apply func() error) valueBinding {
+	result := valueBinding{apply: apply}
+	if bfs, ok := binding.(BindingFromSource); ok {
+		result.source = bfs.Source()
+	}
+	if bwn, ok := binding.(BindingWithName); ok {
+		result.name = bwn.BoundName()
+	}
+	return result
 }
 
 type field struct {
+	// This may be nil, when the source is the default value
 	source        Source
 	destination   interface{}
 	valueBindings []valueBinding
@@ -26,7 +36,10 @@ func (f *field) Consolidate() []error {
 	for _, vb := range f.valueBindings {
 		err := vb.apply()
 		if err == nil {
-			f.source = vb.sourceGetter.GetSource()
+			if vb.source != nil {
+				// We don't want to overwrite a previous source with nil
+				f.source = vb.source
+			}
 			continue
 		}
 		var bindErr *BindFieldMissingError

@@ -22,13 +22,14 @@ func (dsv defaultStringValue) BindTextBasedValueTo(dest encoding.TextUnmarshaler
 	}
 }
 
-func (dsv defaultStringValue) GetSource() Source {
+func (dsv defaultStringValue) Source() Source {
 	return nil
 }
 
 func DefaultStringValue(s string) interface {
 	StringValueBinding
 	TextBasedValueBinding
+	BindingFromSource
 } {
 	return defaultStringValue(s)
 }
@@ -42,17 +43,25 @@ func (div defaultIntValue) BindIntValueTo(dest *int64) func() error {
 	}
 }
 
-func (div defaultIntValue) GetSource() Source {
+func (div defaultIntValue) Source() Source {
 	return nil
 }
 
-func DefaultIntValue(i int64) IntValueBinding {
+func DefaultIntValue(i int64) interface {
+	IntValueBinding
+	BindingFromSource
+} {
 	return defaultIntValue(i)
 }
 
 type DefaultCustomValue func()
 
-func (dcv DefaultCustomValue) GetSource() Source {
+var _ interface {
+	CustomValueBinding
+	BindingFromSource
+} = DefaultCustomValue(nil)
+
+func (dcv DefaultCustomValue) Source() Source {
 	return nil
 }
 

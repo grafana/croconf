@@ -61,8 +61,24 @@ type cliBinding struct {
 	lookupfn func() (string, error)
 }
 
-func (cb *cliBinding) GetSource() Source {
+var _ interface {
+	BindingFromSource
+	BindingWithName
+} = &cliBinding{}
+
+func (cb *cliBinding) Source() Source {
 	return cb.source
+}
+
+func (cb *cliBinding) BoundName() string {
+	// TODO: improve?
+	if cb.position > 0 {
+		return fmt.Sprintf("argument #%d", cb.position)
+	}
+	if cb.shorthand != "" {
+		return fmt.Sprintf("--%s / -%s", cb.shorthand, cb.longhand)
+	}
+	return fmt.Sprintf("--%s", cb.longhand)
 }
 
 // TODO: refactor
@@ -115,8 +131,7 @@ func (cb *cliBinding) BindIntValueTo(dest *int64) func() error {
 	return func() error {
 		v, err := cb.lookup()
 		if err != nil {
-			// TODO what to use? cb.shorthand or cb.longhand or pos or smth joint
-			return NewBindFieldMissingError(cb.source.GetName(), cb.longhand)
+			return NewBindFieldMissingError(cb.source.GetName(), cb.BoundName())
 		}
 		val, bindErr := parseInt(v)
 		if bindErr != nil {
@@ -131,8 +146,7 @@ func (cb *cliBinding) BindUintValueTo(dest *uint64) func() error {
 	return func() error {
 		v, err := cb.lookup()
 		if err != nil {
-			// TODO what to use? cb.shorthand or cb.longhand or pos or smth joint
-			return NewBindFieldMissingError(cb.source.GetName(), cb.longhand)
+			return NewBindFieldMissingError(cb.source.GetName(), cb.BoundName())
 		}
 		val, bindErr := parseUint(v)
 		if bindErr != nil {
@@ -147,8 +161,7 @@ func (cb *cliBinding) BindFloatValueTo(dest *float64) func() error {
 	return func() error {
 		v, err := cb.lookup()
 		if err != nil {
-			// TODO what to use? cb.shorthand or cb.longhand or pos or smth joint
-			return NewBindFieldMissingError(cb.source.GetName(), cb.longhand)
+			return NewBindFieldMissingError(cb.source.GetName(), cb.BoundName())
 		}
 		val, bindErr := parseFloat(v)
 		if bindErr != nil {

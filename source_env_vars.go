@@ -49,8 +49,17 @@ type envBinding struct {
 	lookup func() (string, error)
 }
 
-func (eb *envBinding) GetSource() Source {
+var _ interface {
+	BindingFromSource
+	BindingWithName
+} = &envBinding{}
+
+func (eb *envBinding) Source() Source {
 	return eb.source
+}
+
+func (eb *envBinding) BoundName() string {
+	return eb.name
 }
 
 func (eb *envBinding) BindStringValueTo(dest *string) func() error {

@@ -66,8 +66,17 @@ type jsonBinding struct {
 	name   string
 }
 
-func (jb *jsonBinding) GetSource() Source {
+var _ interface {
+	BindingFromSource
+	BindingWithName
+} = &envBinding{}
+
+func (jb *jsonBinding) Source() Source {
 	return jb.source
+}
+
+func (jb *jsonBinding) BoundName() string {
+	return jb.name
 }
 
 func (jb *jsonBinding) From(name string) *jsonBinding {

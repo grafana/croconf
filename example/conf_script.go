@@ -13,6 +13,8 @@ type ScriptConfig struct {
 	UserAgent string
 	VUs       int64
 
+	Throw bool
+
 	Duration Duration
 
 	DNS struct {
@@ -63,6 +65,17 @@ func NewScriptConfig(
 		),
 		croconf.WithDescription("number of virtual users"),
 		croconf.IsRequired(),
+	)
+
+	cm.AddField(
+		croconf.NewBoolField(
+			&conf.Throw,
+			// TODO: croconf.DefaultBoolValue(false),
+			jsonSource.From("throw"),
+			envVarsSource.From("K6_THROW"),
+			cliSource.FromNameAndShorthand("throw", "w"),
+		),
+		croconf.WithDescription("throw warnings (like failed http requests) as errors"),
 	)
 
 	cm.AddField(

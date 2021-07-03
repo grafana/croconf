@@ -53,7 +53,6 @@ func (sc *SourceCLI) FromPositionalArg(position int) LazySingleValueBinding {
 
 type cliBinding struct {
 	source    *SourceCLI
-	unary     bool // TODO: figure out what we should do about boolean CLI flags
 	shorthand string
 	longhand  string
 	position  int
@@ -158,6 +157,7 @@ func (cb *cliBinding) BindFloatValue() func(bitSize int) (float64, error) {
 }
 
 func (cb *cliBinding) BindBoolValueTo(dest *bool) func() error {
+	cb.source.parser.RegisterUnary(cb.longhand, cb.shorthand)
 	return cb.textValueHelper(func(v string) error {
 		b, err := strconv.ParseBool(v)
 		if err != nil {

@@ -143,6 +143,86 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 		},
 	},
 	{
+		name: "bool field",
+		field: func(sources testSources) Field {
+			var dest bool
+			return NewBoolField(
+				&dest,
+				// DefaultBoolValue(true), // TODO
+				sources.json.From("throw"),
+				sources.env.From("K6_THROW"),
+				sources.cli.FromName("throw"),
+			)
+		},
+		testCases: []fieldTestCase{
+			{
+				expectedValue: false,
+			},
+			{
+				json:          `{"throw": false}`,
+				expectedValue: false,
+			},
+			{
+				json:          `{"throw": true}`,
+				expectedValue: true,
+			},
+			{
+				json:           `{"throw": 123}`,
+				expectedErrors: []string{`json: cannot unmarshal number into Go value of type bool`}, // TODO: better error
+			},
+			{
+				json:          `{"throw": false}`,
+				env:           []string{"K6_THROW=true"},
+				expectedValue: true,
+			},
+			{
+				json:          `{"throw": true}`,
+				env:           []string{"K6_THROW=false"},
+				expectedValue: false,
+			},
+			{
+				json:           `{"throw": true}`,
+				env:            []string{"K6_THROW=boo"},
+				expectedErrors: []string{`strconv.ParseBool: parsing "boo": invalid syntax`}, // TODO: better error
+			},
+			{
+				env:           []string{"K6_THROW=true"},
+				cli:           []string{"--throw=false"},
+				expectedValue: false,
+			},
+			{
+				env:           []string{"K6_THROW=true"},
+				cli:           []string{"--throw=0"},
+				expectedValue: false,
+			},
+			{
+				env:           []string{"K6_THROW=true"},
+				cli:           []string{"--throw=FALSE"},
+				expectedValue: false,
+			},
+			{
+				env:           []string{"K6_THROW=false"},
+				cli:           []string{"--throw"},
+				expectedValue: true,
+			},
+			{
+				env:           []string{"K6_THROW=false"},
+				cli:           []string{"--throw=true"},
+				expectedValue: true,
+			},
+			{
+				env:           []string{"K6_THROW=false"},
+				cli:           []string{"--throw=1"},
+				expectedValue: true,
+			},
+			{
+				env:           []string{"K6_THROW=false"},
+				cli:           []string{"--throw=TRUE"},
+				expectedValue: true,
+			},
+		},
+	},
+	{
 		name: "int8 array",
 		field: func(sources testSources) Field {
 			var dest []int8
@@ -150,6 +230,7 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 				&dest,
 				sources.json.From("tinyArr"),
 				sources.env.From("TINY_ARR"),
+				sources.cli.FromName("tiny-arr"),
 			)
 		},
 		testCases: []fieldTestCase{
@@ -162,6 +243,18 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 				json:          `{"tinyArr": [1, 1, 2]}`,
 				env:           []string{`TINY_ARR=3,5,8`},
 				expectedValue: []int8{3, 5, 8},
+			},
+			{
+				json: `{"tinyArr": [1, 1, 2]}`,
+				env:  []string{`TINY_ARR=3,5,8`},
+				cli: []string{
+					"--tiny-arr", "13",
+					"--tiny-arr=21",
+					// TODO: test comma-separated CLI arrays (and other
+					// delimiters), as well as whitespace trimming
+					//"--tiny-arr", "34,55, 89",
+				},
+				expectedValue: []int8{13, 21},
 			},
 			{
 				json: `{"tinyArr": [1, 255]}`,

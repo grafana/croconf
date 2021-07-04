@@ -78,8 +78,9 @@ func NewInt64Field(dest *int64, sources ...IntValueBinder) Field {
 	})
 }
 
-func NewInt8SliceField(dest *[]int8, sources ...ArrayValueBinder) Field {
-	// TODO: figure out some way to avoid the boilerplate?
+type arrayHandler func(arrLength int, getElement func(int) LazySingleValueBinder) error
+
+func newArrayField(dest interface{}, sources []ArrayValueBinder, handler arrayHandler) Field {
 	return newField(dest, len(sources), func(sourceNum int) Binding {
 		source := sources[sourceNum]
 		var arrLength int
@@ -90,50 +91,99 @@ func NewInt8SliceField(dest *[]int8, sources ...ArrayValueBinder) Field {
 			if err != nil {
 				return err
 			}
-
-			newArr := make([]int8, arrLength)
-			for i := 0; i < arrLength; i++ {
-				var val int64
-				elBinding := getElement(i).BindIntValueTo(&val)
-				if err := elBinding.Apply(); err != nil {
-					return err
-				}
-				if err := checkIntBitsize(val, 8); err != nil {
-					return err
-				}
-				newArr[i] = int8(val) // this is safe
-			}
-			*dest = newArr
-			return nil
+			return handler(arrLength, getElement)
 		})
 	})
 }
 
-func NewInt64SliceField(dest *[]int64, sources ...ArrayValueBinder) Field {
-	return newField(dest, len(sources), func(sourceNum int) Binding {
-		source := sources[sourceNum]
-		var arrLength int
-		var getElement func(int) LazySingleValueBinder
-		binding := source.BindArrayValueTo(&arrLength, &getElement)
-		return wrapBinding(binding, func() error {
-			err := binding.Apply()
-			if err != nil {
+func intSliceHandler(newTypedSlice func(int) (add func(int64) error, save func())) arrayHandler {
+	return func(arrLength int, getElement func(int) LazySingleValueBinder) error {
+		add, save := newTypedSlice(arrLength)
+		for i := 0; i < arrLength; i++ {
+			var val int64
+			elBinding := getElement(i).BindIntValueTo(&val)
+			if err := elBinding.Apply(); err != nil {
 				return err
 			}
-
-			newArr := make([]int64, arrLength)
-			for i := 0; i < arrLength; i++ {
-				var val int64
-				elBinding := getElement(i).BindIntValueTo(&val)
-				if err := elBinding.Apply(); err != nil {
-					return err
-				}
-				newArr[i] = val
+			if err := add(val); err != nil {
+				return err
 			}
-			*dest = newArr
+		}
+		save()
+		return nil
+	}
+}
+
+func NewIntSliceField(dest *[]int, sources ...ArrayValueBinder) Field {
+	return newArrayField(dest, sources, intSliceHandler(func(arrLength int) (func(int64) error, func()) {
+		newArr := make([]int, 0, arrLength)
+		add := func(val int64) error {
+			if err := checkIntBitsize(val, strconv.IntSize); err != nil {
+				return err
+			}
+			newArr = append(newArr, int(val)) // this is safe
 			return nil
-		})
-	})
+		}
+		save := func() { *dest = newArr }
+		return add, save
+	}))
+}
+
+func NewInt8SliceField(dest *[]int8, sources ...ArrayValueBinder) Field {
+	return newArrayField(dest, sources, intSliceHandler(func(arrLength int) (func(int64) error, func()) {
+		newArr := make([]int8, 0, arrLength)
+		add := func(val int64) error {
+			if err := checkIntBitsize(val, 8); err != nil {
+				return err
+			}
+			newArr = append(newArr, int8(val)) // this is safe
+			return nil
+		}
+		save := func() { *dest = newArr }
+		return add, save
+	}))
+}
+
+func NewInt16SliceField(dest *[]int16, sources ...ArrayValueBinder) Field {
+	return newArrayField(dest, sources, intSliceHandler(func(arrLength int) (func(int64) error, func()) {
+		newArr := make([]int16, 0, arrLength)
+		add := func(val int64) error {
+			if err := checkIntBitsize(val, 16); err != nil {
+				return err
+			}
+			newArr = append(newArr, int16(val)) // this is safe
+			return nil
+		}
+		save := func() { *dest = newArr }
+		return add, save
+	}))
+}
+
+func NewInt32SliceField(dest *[]int32, sources ...ArrayValueBinder) Field {
+	return newArrayField(dest, sources, intSliceHandler(func(arrLength int) (func(int64) error, func()) {
+		newArr := make([]int32, 0, arrLength)
+		add := func(val int64) error {
+			if err := checkIntBitsize(val, 32); err != nil {
+				return err
+			}
+			newArr = append(newArr, int32(val)) // this is safe
+			return nil
+		}
+		save := func() { *dest = newArr }
+		return add, save
+	}))
+}
+
+func NewInt64SliceField(dest *[]int64, sources ...ArrayValueBinder) Field {
+	return newArrayField(dest, sources, intSliceHandler(func(arrLength int) (func(int64) error, func()) {
+		newArr := make([]int64, 0, arrLength)
+		add := func(val int64) error {
+			newArr = append(newArr, val)
+			return nil
+		}
+		save := func() { *dest = newArr }
+		return add, save
+	}))
 }
 
 func NewStringField(dest *string, sources ...StringValueBinder) Field {

@@ -35,23 +35,23 @@ func (sc *SourceCLI) GetName() string {
 	return "CLI flags" // TODO
 }
 
-func (sc *SourceCLI) FromName(name string) *cliBinding {
-	return &cliBinding{source: sc, longhand: name}
+func (sc *SourceCLI) FromName(name string) *cliBinder {
+	return &cliBinder{source: sc, longhand: name}
 }
 
-func (sc *SourceCLI) FromNameAndShorthand(name, shorthand string) *cliBinding {
-	return &cliBinding{
+func (sc *SourceCLI) FromNameAndShorthand(name, shorthand string) *cliBinder {
+	return &cliBinder{
 		source:    sc,
 		longhand:  name,
 		shorthand: shorthand,
 	}
 }
 
-func (sc *SourceCLI) FromPositionalArg(position int) LazySingleValueBinder {
-	return &cliBinding{source: sc, position: position}
+func (sc *SourceCLI) FromPositionalArg(position int) *cliBinder {
+	return &cliBinder{source: sc, position: position}
 }
 
-type cliBinding struct {
+type cliBinder struct {
 	source    *SourceCLI
 	shorthand string
 	longhand  string
@@ -61,16 +61,7 @@ type cliBinding struct {
 	lookupfn func() (string, error)
 }
 
-var _ interface {
-	BindingFromSource
-	BindingWithName
-} = &cliBinding{}
-
-func (cb *cliBinding) Source() Source {
-	return cb.source
-}
-
-func (cb *cliBinding) BoundName() string {
+func (cb *cliBinder) boundName() string {
 	// TODO: improve?
 	if cb.position > 0 {
 		return fmt.Sprintf("argument #%d", cb.position)
@@ -81,8 +72,15 @@ func (cb *cliBinding) BoundName() string {
 	return fmt.Sprintf("--%s", cb.longhand)
 }
 
+func (cb *cliBinder) newBinding(apply func() error) *cliBinding {
+	return &cliBinding{
+		binder: cb,
+		apply:  apply,
+	}
+}
+
 // TODO: refactor
-func (cb *cliBinding) lookup() (string, error) {
+func (cb *cliBinder) lookup() (string, error) {
 	// custom lookup
 	if cb.lookupfn != nil {
 		return cb.lookupfn()
@@ -104,34 +102,34 @@ func (cb *cliBinding) lookup() (string, error) {
 
 // we can use this function to get the string representation of any simple
 // binary value and parse it ourselves
-func (cb *cliBinding) textValueHelper(callback func(string) error) func() error {
-	return func() error {
+func (cb *cliBinder) textValueHelper(callback func(string) error) Binding {
+	return cb.newBinding(func() error {
 		vtext, err := cb.lookup()
 		if err != nil {
 			return ErrorMissing
 		}
 		return callback(vtext)
-	}
+	})
 }
 
-func (cb *cliBinding) BindStringValueTo(dest *string) func() error {
+func (cb *cliBinder) BindStringValueTo(dest *string) Binding {
 	return cb.textValueHelper(func(s string) error {
 		*dest = s
 		return nil
 	})
 }
 
-func (cb *cliBinding) BindTextBasedValueTo(dest encoding.TextUnmarshaler) func() error {
+func (cb *cliBinder) BindTextBasedValueTo(dest encoding.TextUnmarshaler) Binding {
 	return cb.textValueHelper(func(s string) error {
 		return dest.UnmarshalText([]byte(s))
 	})
 }
 
-func (cb *cliBinding) BindIntValueTo(dest *int64) func() error {
-	return func() error {
+func (cb *cliBinder) BindIntValueTo(dest *int64) Binding {
+	return cb.newBinding(func() error {
 		v, err := cb.lookup()
 		if err != nil {
-			return NewBindFieldMissingError(cb.source.GetName(), cb.BoundName())
+			return NewBindFieldMissingError(cb.source.GetName(), cb.boundName())
 		}
 		val, bindErr := parseInt(v)
 		if bindErr != nil {
@@ -139,14 +137,14 @@ func (cb *cliBinding) BindIntValueTo(dest *int64) func() error {
 		}
 		*dest = val
 		return nil
-	}
+	})
 }
 
-func (cb *cliBinding) BindUintValueTo(dest *uint64) func() error {
-	return func() error {
+func (cb *cliBinder) BindUintValueTo(dest *uint64) Binding {
+	return cb.newBinding(func() error {
 		v, err := cb.lookup()
 		if err != nil {
-			return NewBindFieldMissingError(cb.source.GetName(), cb.BoundName())
+			return NewBindFieldMissingError(cb.source.GetName(), cb.boundName())
 		}
 		val, bindErr := parseUint(v)
 		if bindErr != nil {
@@ -154,14 +152,14 @@ func (cb *cliBinding) BindUintValueTo(dest *uint64) func() error {
 		}
 		*dest = val
 		return nil
-	}
+	})
 }
 
-func (cb *cliBinding) BindFloatValueTo(dest *float64) func() error {
-	return func() error {
+func (cb *cliBinder) BindFloatValueTo(dest *float64) Binding {
+	return cb.newBinding(func() error {
 		v, err := cb.lookup()
 		if err != nil {
-			return NewBindFieldMissingError(cb.source.GetName(), cb.BoundName())
+			return NewBindFieldMissingError(cb.source.GetName(), cb.boundName())
 		}
 		val, bindErr := parseFloat(v)
 		if bindErr != nil {
@@ -169,10 +167,10 @@ func (cb *cliBinding) BindFloatValueTo(dest *float64) func() error {
 		}
 		*dest = val
 		return nil
-	}
+	})
 }
 
-func (cb *cliBinding) BindBoolValueTo(dest *bool) func() error {
+func (cb *cliBinder) BindBoolValueTo(dest *bool) Binding {
 	cb.source.parser.RegisterUnary(cb.longhand, cb.shorthand)
 	return cb.textValueHelper(func(v string) error {
 		b, err := strconv.ParseBool(v)
@@ -184,33 +182,48 @@ func (cb *cliBinding) BindBoolValueTo(dest *bool) func() error {
 	})
 }
 
-func (cb *cliBinding) BindArray() func() (Array, error) {
+func (cb *cliBinder) BindArrayValueTo(length *int, element *func(int) LazySingleValueBinder) Binding {
 	cb.source.parser.RegisterSlice(cb.longhand, cb.shorthand)
-	return func() (Array, error) {
+	return cb.newBinding(func() error {
 		opts := cb.source.fs.Options(cb.longhand, cb.shorthand)
 		if len(opts) < 1 {
-			return nil, ErrorMissing
+			return ErrorMissing
 		}
-		return cliArrayBinding{cb: cb, arr: opts}, nil
-	}
-}
 
-type cliArrayBinding struct {
-	cb  *cliBinding
-	arr []string
-}
-
-func (cab cliArrayBinding) Len() int {
-	return len(cab.arr)
-}
-
-func (cab cliArrayBinding) Element(i int) LazySingleValueBinder {
-	cbcopy := *cab.cb
-	cbcopy.lookupfn = func() (string, error) {
-		if i >= len(cab.arr) {
-			return "", fmt.Errorf("tried to access invalid element %s, array only has %d elements", cab.cb.longhand, i)
+		*length = len(opts)
+		*element = func(i int) LazySingleValueBinder {
+			cbcopy := *cb
+			cbcopy.lookupfn = func() (string, error) {
+				if i >= len(opts) {
+					return "", fmt.Errorf("tried to access invalid element %s, array only has %d elements", cbcopy.longhand, i)
+				}
+				return opts[i], nil
+			}
+			return &cbcopy
 		}
-		return cab.arr[i], nil
-	}
-	return &cbcopy
+
+		return nil
+	})
+}
+
+type cliBinding struct {
+	binder *cliBinder
+	apply  func() error
+}
+
+var _ interface {
+	Binding
+	BindingFromSource
+} = &cliBinding{}
+
+func (cb *cliBinding) Apply() error {
+	return cb.apply()
+}
+
+func (cb *cliBinding) Source() Source {
+	return cb.binder.source
+}
+
+func (cb *cliBinding) BoundName() string {
+	return cb.binder.boundName()
 }

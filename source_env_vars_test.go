@@ -19,7 +19,8 @@ func TestEnvVarsBindIntValue(t *testing.T) {
 	}
 
 	var val int64
-	err := vus.BindIntValueTo(&val)()
+	valBinding := vus.BindIntValueTo(&val)
+	err := valBinding.Apply()
 	if err != nil {
 		t.Errorf("BindIntValueTo error: %s", err)
 	}
@@ -27,7 +28,8 @@ func TestEnvVarsBindIntValue(t *testing.T) {
 		t.Errorf("BindIntValue: got %d, expected %d", val, expected)
 	}
 
-	err = missed.BindIntValueTo(&val)()
+	valBinding = missed.BindIntValueTo(&val)
+	err = valBinding.Apply()
 	if err == nil {
 		t.Error("BindIntValue: expected field missing error")
 	}
@@ -35,7 +37,8 @@ func TestEnvVarsBindIntValue(t *testing.T) {
 		t.Error("BindIntValue: unexpected error message:", err)
 	}
 
-	err = k6UserAgent.BindIntValueTo(&val)()
+	valBinding = k6UserAgent.BindIntValueTo(&val)
+	err = valBinding.Apply()
 	if err == nil {
 		t.Error("BindIntValue: expected syntax error")
 	}
@@ -58,7 +61,8 @@ func TestEnvVarsBindUintValue(t *testing.T) {
 	}
 
 	var val uint64
-	err := vus.BindUintValueTo(&val)()
+	valBinding := vus.BindUintValueTo(&val)
+	err := valBinding.Apply()
 	if err != nil {
 		t.Errorf("BindUintValueTo error: %s", err)
 	}
@@ -66,7 +70,8 @@ func TestEnvVarsBindUintValue(t *testing.T) {
 		t.Errorf("BindUintValue: got %d, expected %d", val, expected)
 	}
 
-	err = missed.BindUintValueTo(&val)()
+	valBinding = missed.BindUintValueTo(&val)
+	err = valBinding.Apply()
 	if err == nil {
 		t.Error("BindUintValue: expected field missing error")
 	}
@@ -74,7 +79,8 @@ func TestEnvVarsBindUintValue(t *testing.T) {
 		t.Error("BindUintValue: unexpected error message:", err)
 	}
 
-	err = k6UserAgent.BindUintValueTo(&val)()
+	valBinding = k6UserAgent.BindUintValueTo(&val)
+	err = valBinding.Apply()
 	if err == nil {
 		t.Error("BindUintValue: expected syntax error")
 	}
@@ -98,7 +104,8 @@ func TestEnvVarsFloatValue(t *testing.T) {
 	}
 
 	var val float64
-	err := vus.BindFloatValueTo(&val)()
+	valBinding := vus.BindFloatValueTo(&val)
+	err := valBinding.Apply()
 	expected := float64(6)
 	if err != nil {
 		t.Errorf("BindFloatValue error: %s", err)
@@ -107,7 +114,8 @@ func TestEnvVarsFloatValue(t *testing.T) {
 		t.Errorf("BindFloatValue: got %f, expected %f", val, expected)
 	}
 
-	err = pi.BindFloatValueTo(&val)()
+	valBinding = pi.BindFloatValueTo(&val)
+	err = valBinding.Apply()
 	expected = float64(3.14)
 	if err != nil {
 		t.Errorf("BindFloatValue error: %s", err)
@@ -116,7 +124,8 @@ func TestEnvVarsFloatValue(t *testing.T) {
 		t.Errorf("BindFloatValue: got %f, expected %f", val, expected)
 	}
 
-	err = missed.BindFloatValueTo(&val)()
+	valBinding = missed.BindFloatValueTo(&val)
+	err = valBinding.Apply()
 	if err == nil {
 		t.Error("BindFloatValue: expected field missing error")
 	}
@@ -124,7 +133,8 @@ func TestEnvVarsFloatValue(t *testing.T) {
 		t.Error("BindFloatValue: unexpected error message:", err)
 	}
 
-	err = k6UserAgent.BindFloatValueTo(&val)()
+	valBinding = k6UserAgent.BindFloatValueTo(&val)
+	err = valBinding.Apply()
 	if err == nil {
 		t.Error("BindFloatValue: expected syntax error")
 	}

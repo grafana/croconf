@@ -332,7 +332,8 @@ func runTestCase(t *testing.T, tcg testCaseGroup, tc fieldTestCase) {
 		}
 	}
 
-	errs := field.Consolidate()
+	mf := &ManagedField{Field: field}
+	errs := mf.Consolidate()
 	if len(tc.expectedErrors) != len(errs) {
 		t.Fatalf("Expected %d errors but got %d: %#v", len(tc.expectedErrors), len(errs), errs)
 	}

@@ -146,34 +146,27 @@ type scenariosField struct {
 	dest   *lib.ScenarioConfigs
 	source *croconf.SourceJSON
 	id     string
-	wasSet bool
 }
 
 func (sf *scenariosField) Destination() interface{} {
 	return sf.dest
 }
 
-func (sf *scenariosField) Consolidate() []error {
-	*sf.dest = lib.ScenarioConfigs{
-		lib.DefaultScenarioName: executor.NewPerVUIterationsConfig(lib.DefaultScenarioName),
-	}
+func (sf *scenariosField) Bindings() []croconf.Binding {
+	return []croconf.Binding{
+		croconf.NewCallbackBinding(func() error {
+			*sf.dest = lib.ScenarioConfigs{
+				lib.DefaultScenarioName: executor.NewPerVUIterationsConfig(lib.DefaultScenarioName),
+			}
+			return nil
+		}),
+		croconf.NewCallbackBindingFromSource(sf.source, sf.id, func() error {
+			jsonVal, ok := sf.source.Lookup(sf.id)
+			if !ok {
+				return nil
+			}
 
-	jsonVal, ok := sf.source.Lookup(sf.id)
-	if !ok {
-		return nil
+			return sf.dest.UnmarshalJSON(jsonVal)
+		}),
 	}
-
-	if err := sf.dest.UnmarshalJSON(jsonVal); err != nil {
-		return []error{err}
-	}
-	sf.wasSet = true
-
-	return nil
-}
-
-func (sf *scenariosField) ValueSource() croconf.Source {
-	if sf.wasSet {
-		return sf.source
-	}
-	return nil
 }

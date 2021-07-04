@@ -3,15 +3,13 @@ package croconf
 import "encoding"
 
 type Field interface {
-	Consolidate() []error
-	ValueSource() Source // nil for default value
 	Destination() interface{}
+	Bindings() []Binding
 }
 
 type Source interface {
 	Initialize() error
-	// TODO: figure out what to put here? and if we even need this :/
-	GetName() string
+	GetName() string // TODO: remove?
 }
 
 type Binding interface {
@@ -19,12 +17,8 @@ type Binding interface {
 }
 
 type BindingFromSource interface {
-	// Binding
+	Binding
 	Source() Source
-}
-
-type BindingWithName interface {
-	// Binding
 	BoundName() string
 }
 
@@ -37,39 +31,35 @@ type LazySingleValueBinder interface {
 	TextBasedValueBinder
 }
 
-type ArrayBinder interface {
-	BindArray() func() (Array, error)
-}
-
-type Array interface { // TODO: rename to List and ListBinding?
-	Len() int
-	Element(int) LazySingleValueBinder
-}
-
 type StringValueBinder interface {
-	BindStringValueTo(*string) func() error
+	BindStringValueTo(*string) Binding
 }
 
 type IntValueBinder interface {
-	BindIntValueTo(*int64) func() error
+	BindIntValueTo(*int64) Binding
 }
 
 type UintValueBinder interface {
-	BindUintValueTo(*uint64) func() error
+	BindUintValueTo(*uint64) Binding
 }
 
 type FloatValueBinder interface {
-	BindFloatValueTo(*float64) func() error
+	BindFloatValueTo(*float64) Binding
 }
 
 type BoolValueBinder interface {
-	BindBoolValueTo(dest *bool) func() error
+	BindBoolValueTo(dest *bool) Binding
 }
 
 type TextBasedValueBinder interface {
-	BindTextBasedValueTo(dest encoding.TextUnmarshaler) func() error
+	BindTextBasedValueTo(dest encoding.TextUnmarshaler) Binding
 }
 
 type CustomValueBinder interface {
-	BindValue() func() error
+	BindValue() Binding
+}
+
+// TODO: rename to List or Slice instead of Array?
+type ArrayValueBinder interface {
+	BindArrayValueTo(length *int, element *func(int) LazySingleValueBinder) Binding
 }

@@ -29,8 +29,8 @@ func (sev *SourceEnvVars) GetName() string {
 	return "environment variables" // TODO
 }
 
-func (sev *SourceEnvVars) From(name string) *envBinding {
-	return &envBinding{
+func (sev *SourceEnvVars) From(name string) *envBinder {
+	return &envBinder{
 		source: sev,
 		name:   name,
 		lookup: func() (string, error) {
@@ -43,38 +43,32 @@ func (sev *SourceEnvVars) From(name string) *envBinding {
 	}
 }
 
-type envBinding struct {
+type envBinder struct {
 	source Source
 	name   string
 	lookup func() (string, error)
 }
 
-var _ interface {
-	BindingFromSource
-	BindingWithName
-} = &envBinding{}
-
-func (eb *envBinding) Source() Source {
-	return eb.source
+func (eb *envBinder) newBinding(apply func() error) *envBinding {
+	return &envBinding{
+		binder: eb,
+		apply:  apply,
+	}
 }
 
-func (eb *envBinding) BoundName() string {
-	return eb.name
-}
-
-func (eb *envBinding) BindStringValueTo(dest *string) func() error {
-	return func() error {
+func (eb *envBinder) BindStringValueTo(dest *string) Binding {
+	return eb.newBinding(func() error {
 		val, err := eb.lookup()
 		if err != nil {
 			return err
 		}
 		*dest = val
 		return nil
-	}
+	})
 }
 
-func (eb *envBinding) BindIntValueTo(dest *int64) func() error {
-	return func() error {
+func (eb *envBinder) BindIntValueTo(dest *int64) Binding {
+	return eb.newBinding(func() error {
 		val, err := eb.lookup()
 		if err != nil {
 			// TODO: we might want to integrate custom error into lookup() method
@@ -86,11 +80,11 @@ func (eb *envBinding) BindIntValueTo(dest *int64) func() error {
 		}
 		*dest = intVal
 		return nil
-	}
+	})
 }
 
-func (eb *envBinding) BindUintValueTo(dest *uint64) func() error {
-	return func() error {
+func (eb *envBinder) BindUintValueTo(dest *uint64) Binding {
+	return eb.newBinding(func() error {
 		val, err := eb.lookup()
 		if err != nil {
 			// TODO: we might want to integrate custom error into lookup() method
@@ -102,11 +96,11 @@ func (eb *envBinding) BindUintValueTo(dest *uint64) func() error {
 		}
 		*dest = uintVal
 		return nil
-	}
+	})
 }
 
-func (eb *envBinding) BindFloatValueTo(dest *float64) func() error {
-	return func() error {
+func (eb *envBinder) BindFloatValueTo(dest *float64) Binding {
+	return eb.newBinding(func() error {
 		strVal, err := eb.lookup()
 		if err != nil {
 			// TODO: we might want to integrate custom error into lookup() method
@@ -118,11 +112,11 @@ func (eb *envBinding) BindFloatValueTo(dest *float64) func() error {
 		}
 		*dest = val
 		return nil
-	}
+	})
 }
 
-func (eb *envBinding) BindBoolValueTo(dest *bool) func() error {
-	return func() error {
+func (eb *envBinder) BindBoolValueTo(dest *bool) Binding {
+	return eb.newBinding(func() error {
 		val, err := eb.lookup()
 		if err != nil {
 			return err
@@ -133,54 +127,45 @@ func (eb *envBinding) BindBoolValueTo(dest *bool) func() error {
 		}
 		*dest = b
 		return nil
-	}
+	})
 }
 
-func (eb *envBinding) BindTextBasedValueTo(dest encoding.TextUnmarshaler) func() error {
-	return func() error {
+func (eb *envBinder) BindTextBasedValueTo(dest encoding.TextUnmarshaler) Binding {
+	return eb.newBinding(func() error {
 		val, err := eb.lookup()
 		if err != nil {
 			return NewBindFieldMissingError(eb.source.GetName(), eb.name)
 		}
 
 		return dest.UnmarshalText([]byte(val))
-	}
+	})
 }
 
-func (eb *envBinding) BindArray() func() (Array, error) {
-	return func() (Array, error) {
+func (eb *envBinder) BindArrayValueTo(length *int, element *func(int) LazySingleValueBinder) Binding {
+	return eb.newBinding(func() error {
 		val, err := eb.lookup()
 		if err != nil {
-			return nil, NewBindFieldMissingError(eb.source.GetName(), eb.name)
+			return NewBindFieldMissingError(eb.source.GetName(), eb.name)
 		}
 
 		arr := strings.Split(val, ",") // TODO: figure out how to make the delimiter configurable
 
-		return &envVarArray{eb: eb, array: arr}, nil
-	}
-}
-
-type envVarArray struct {
-	eb    *envBinding
-	array []string
-}
-
-func (eva *envVarArray) Len() int {
-	return len(eva.array)
-}
-
-func (eva *envVarArray) Element(elNum int) LazySingleValueBinder {
-	name := fmt.Sprintf("%s[%d]", eva.eb.name, elNum)
-	return &envBinding{
-		source: eva.eb.source,
-		name:   name,
-		lookup: func() (string, error) {
-			if elNum >= len(eva.array) {
-				return "", fmt.Errorf("tried to access invalid element %s, array only has %d elements", name, elNum)
+		*length = len(arr)
+		*element = func(elNum int) LazySingleValueBinder {
+			name := fmt.Sprintf("%s[%d]", eb.name, elNum)
+			return &envBinder{
+				source: eb.source,
+				name:   name,
+				lookup: func() (string, error) {
+					if elNum >= len(arr) {
+						return "", fmt.Errorf("tried to access invalid element %s, array only has %d elements", name, elNum)
+					}
+					return arr[elNum], nil
+				},
 			}
-			return eva.array[elNum], nil
-		},
-	}
+		}
+		return nil
+	})
 }
 
 func parseEnvKeyValue(kv string) (string, string) {
@@ -188,4 +173,26 @@ func parseEnvKeyValue(kv string) (string, string) {
 		return kv[:idx], kv[idx+1:]
 	}
 	return kv, ""
+}
+
+type envBinding struct {
+	binder *envBinder
+	apply  func() error
+}
+
+var _ interface {
+	Binding
+	BindingFromSource
+} = &envBinding{}
+
+func (eb *envBinding) Apply() error {
+	return eb.apply()
+}
+
+func (eb *envBinding) Source() Source {
+	return eb.binder.source
+}
+
+func (eb *envBinding) BoundName() string {
+	return eb.binder.name
 }

@@ -2,80 +2,41 @@ package croconf
 
 import (
 	"encoding"
-	"errors"
 	"strconv"
 )
 
-type valueBinding struct {
-	// This may be nil, when the binding doesn't come from a source
-	source Source
-	name   string
-	apply  func() error
-}
-
-func vb(binding interface{}, apply func() error) valueBinding {
-	result := valueBinding{apply: apply}
-	if bfs, ok := binding.(BindingFromSource); ok {
-		result.source = bfs.Source()
-	}
-	if bwn, ok := binding.(BindingWithName); ok {
-		result.name = bwn.BoundName()
-	}
-	return result
-}
-
 type field struct {
-	// This may be nil, when the source is the default value
-	source        Source
-	destination   interface{}
-	valueBindings []valueBinding
-}
-
-func (f *field) Consolidate() []error {
-	var errs []error
-	for _, vb := range f.valueBindings {
-		err := vb.apply()
-		if err == nil {
-			if vb.source != nil {
-				// We don't want to overwrite a previous source with nil
-				f.source = vb.source
-			}
-			continue
-		}
-		var bindErr *BindFieldMissingError
-		if !errors.Is(ErrorMissing, err) && !errors.As(err, &bindErr) {
-			errs = append(errs, err)
-		}
-	}
-	return errs
-}
-
-func (f *field) ValueSource() Source {
-	return f.source
+	destination interface{}
+	bindings    []Binding
 }
 
 func (f *field) Destination() interface{} {
 	return f.destination
 }
 
-func newField(dest interface{}, sourcesLen int, callback func(sourceNum int) valueBinding) *field {
+func (f *field) Bindings() []Binding {
+	return f.bindings
+}
+
+func newField(dest interface{}, sourcesLen int, callback func(sourceNum int) Binding) *field {
 	f := &field{
-		destination:   dest,
-		valueBindings: make([]valueBinding, sourcesLen),
+		destination: dest,
+		bindings:    make([]Binding, sourcesLen),
 	}
 	for i := 0; i < sourcesLen; i++ {
-		f.valueBindings[i] = callback(i)
+		f.bindings[i] = callback(i)
 	}
 
 	return f
 }
 
-func intValHelper(sources []IntValueBinder, bitSize int, saveToDest func(int64)) func(sourceNum int) valueBinding {
-	return func(sourceNum int) valueBinding {
+func intValHelper(sources []IntValueBinder, bitSize int, saveToDest func(int64)) func(sourceNum int) Binding {
+	return func(sourceNum int) Binding {
 		var val int64
-		bind := sources[sourceNum].BindIntValueTo(&val)
-		return vb(sources[sourceNum], func() error {
-			if err := bind(); err != nil {
+		binding := sources[sourceNum].BindIntValueTo(&val)
+
+		return wrapBinding(binding, func() error {
+			if err := binding.Apply(); err != nil {
 				return err
 			}
 			if err := checkIntBitsize(val, bitSize); err != nil {
@@ -112,28 +73,29 @@ func NewInt32Field(dest *int32, sources ...IntValueBinder) Field {
 }
 
 func NewInt64Field(dest *int64, sources ...IntValueBinder) Field {
-	return newField(dest, len(sources), func(sourceNum int) valueBinding {
-		return vb(sources[sourceNum], sources[sourceNum].BindIntValueTo(dest))
+	return newField(dest, len(sources), func(sourceNum int) Binding {
+		return sources[sourceNum].BindIntValueTo(dest)
 	})
 }
 
-func NewInt8SliceField(dest *[]int8, sources ...ArrayBinder) Field {
+func NewInt8SliceField(dest *[]int8, sources ...ArrayValueBinder) Field {
 	// TODO: figure out some way to avoid the boilerplate?
-	return newField(dest, len(sources), func(sourceNum int) valueBinding {
+	return newField(dest, len(sources), func(sourceNum int) Binding {
 		source := sources[sourceNum]
-		arrBind := source.BindArray()
-		return vb(source, func() error {
-			sourceArr, err := arrBind()
+		var arrLength int
+		var getElement func(int) LazySingleValueBinder
+		binding := source.BindArrayValueTo(&arrLength, &getElement)
+		return wrapBinding(binding, func() error {
+			err := binding.Apply()
 			if err != nil {
 				return err
 			}
 
-			arrLen := sourceArr.Len()
-			newArr := make([]int8, arrLen)
-			for i := 0; i < arrLen; i++ {
+			newArr := make([]int8, arrLength)
+			for i := 0; i < arrLength; i++ {
 				var val int64
-				bind := sourceArr.Element(i).BindIntValueTo(&val)
-				if err := bind(); err != nil {
+				elBinding := getElement(i).BindIntValueTo(&val)
+				if err := elBinding.Apply(); err != nil {
 					return err
 				}
 				if err := checkIntBitsize(val, 8); err != nil {
@@ -147,22 +109,23 @@ func NewInt8SliceField(dest *[]int8, sources ...ArrayBinder) Field {
 	})
 }
 
-func NewInt64SliceField(dest *[]int64, sources ...ArrayBinder) Field {
-	return newField(dest, len(sources), func(sourceNum int) valueBinding {
+func NewInt64SliceField(dest *[]int64, sources ...ArrayValueBinder) Field {
+	return newField(dest, len(sources), func(sourceNum int) Binding {
 		source := sources[sourceNum]
-		arrBind := source.BindArray()
-		return vb(source, func() error {
-			sourceArr, err := arrBind()
+		var arrLength int
+		var getElement func(int) LazySingleValueBinder
+		binding := source.BindArrayValueTo(&arrLength, &getElement)
+		return wrapBinding(binding, func() error {
+			err := binding.Apply()
 			if err != nil {
 				return err
 			}
 
-			arrLen := sourceArr.Len()
-			newArr := make([]int64, arrLen)
-			for i := 0; i < arrLen; i++ {
+			newArr := make([]int64, arrLength)
+			for i := 0; i < arrLength; i++ {
 				var val int64
-				bind := sourceArr.Element(i).BindIntValueTo(&val)
-				if err := bind(); err != nil {
+				elBinding := getElement(i).BindIntValueTo(&val)
+				if err := elBinding.Apply(); err != nil {
 					return err
 				}
 				newArr[i] = val
@@ -174,25 +137,25 @@ func NewInt64SliceField(dest *[]int64, sources ...ArrayBinder) Field {
 }
 
 func NewStringField(dest *string, sources ...StringValueBinder) Field {
-	return newField(dest, len(sources), func(sourceNum int) valueBinding {
-		return vb(sources[sourceNum], sources[sourceNum].BindStringValueTo(dest))
+	return newField(dest, len(sources), func(sourceNum int) Binding {
+		return sources[sourceNum].BindStringValueTo(dest)
 	})
 }
 
 func NewTextBasedField(dest encoding.TextUnmarshaler, sources ...TextBasedValueBinder) Field {
-	return newField(dest, len(sources), func(sourceNum int) valueBinding {
-		return vb(sources[sourceNum], sources[sourceNum].BindTextBasedValueTo(dest))
+	return newField(dest, len(sources), func(sourceNum int) Binding {
+		return sources[sourceNum].BindTextBasedValueTo(dest)
 	})
 }
 
 func NewBoolField(dest *bool, sources ...BoolValueBinder) Field {
-	return newField(dest, len(sources), func(sourceNum int) valueBinding {
-		return vb(sources[sourceNum], sources[sourceNum].BindBoolValueTo(dest))
+	return newField(dest, len(sources), func(sourceNum int) Binding {
+		return sources[sourceNum].BindBoolValueTo(dest)
 	})
 }
 
 func NewCustomField(dest interface{}, sources ...CustomValueBinder) Field {
-	return newField(dest, len(sources), func(sourceNum int) valueBinding {
-		return vb(sources[sourceNum], sources[sourceNum].BindValue())
+	return newField(dest, len(sources), func(sourceNum int) Binding {
+		return sources[sourceNum].BindValue()
 	})
 }

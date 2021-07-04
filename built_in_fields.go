@@ -70,7 +70,7 @@ func newField(dest interface{}, sourcesLen int, callback func(sourceNum int) val
 	return f
 }
 
-func intValHelper(sources []IntValueBinding, bitSize int, saveToDest func(int64)) func(sourceNum int) valueBinding {
+func intValHelper(sources []IntValueBinder, bitSize int, saveToDest func(int64)) func(sourceNum int) valueBinding {
 	return func(sourceNum int) valueBinding {
 		var val int64
 		bind := sources[sourceNum].BindIntValueTo(&val)
@@ -87,37 +87,37 @@ func intValHelper(sources []IntValueBinding, bitSize int, saveToDest func(int64)
 	}
 }
 
-func NewIntField(dest *int, sources ...IntValueBinding) Field {
+func NewIntField(dest *int, sources ...IntValueBinder) Field {
 	return newField(dest, len(sources), intValHelper(sources, strconv.IntSize, func(val int64) {
 		*dest = int(val) // this is safe, intValHelper checks val against bitSize
 	}))
 }
 
-func NewInt8Field(dest *int8, sources ...IntValueBinding) Field {
+func NewInt8Field(dest *int8, sources ...IntValueBinder) Field {
 	return newField(dest, len(sources), intValHelper(sources, 8, func(val int64) {
 		*dest = int8(val) // this is safe, intValHelper checks val against bitSize
 	}))
 }
 
-func NewInt16Field(dest *int16, sources ...IntValueBinding) Field {
+func NewInt16Field(dest *int16, sources ...IntValueBinder) Field {
 	return newField(dest, len(sources), intValHelper(sources, 16, func(val int64) {
 		*dest = int16(val) // this is safe, intValHelper checks val against bitSize
 	}))
 }
 
-func NewInt32Field(dest *int32, sources ...IntValueBinding) Field {
+func NewInt32Field(dest *int32, sources ...IntValueBinder) Field {
 	return newField(dest, len(sources), intValHelper(sources, 32, func(val int64) {
 		*dest = int32(val) // this is safe, intValHelper checks val against bitSize
 	}))
 }
 
-func NewInt64Field(dest *int64, sources ...IntValueBinding) Field {
+func NewInt64Field(dest *int64, sources ...IntValueBinder) Field {
 	return newField(dest, len(sources), func(sourceNum int) valueBinding {
 		return vb(sources[sourceNum], sources[sourceNum].BindIntValueTo(dest))
 	})
 }
 
-func NewInt8SliceField(dest *[]int8, sources ...ArrayBinding) Field {
+func NewInt8SliceField(dest *[]int8, sources ...ArrayBinder) Field {
 	// TODO: figure out some way to avoid the boilerplate?
 	return newField(dest, len(sources), func(sourceNum int) valueBinding {
 		source := sources[sourceNum]
@@ -147,7 +147,7 @@ func NewInt8SliceField(dest *[]int8, sources ...ArrayBinding) Field {
 	})
 }
 
-func NewInt64SliceField(dest *[]int64, sources ...ArrayBinding) Field {
+func NewInt64SliceField(dest *[]int64, sources ...ArrayBinder) Field {
 	return newField(dest, len(sources), func(sourceNum int) valueBinding {
 		source := sources[sourceNum]
 		arrBind := source.BindArray()
@@ -173,25 +173,25 @@ func NewInt64SliceField(dest *[]int64, sources ...ArrayBinding) Field {
 	})
 }
 
-func NewStringField(dest *string, sources ...StringValueBinding) Field {
+func NewStringField(dest *string, sources ...StringValueBinder) Field {
 	return newField(dest, len(sources), func(sourceNum int) valueBinding {
 		return vb(sources[sourceNum], sources[sourceNum].BindStringValueTo(dest))
 	})
 }
 
-func NewTextBasedField(dest encoding.TextUnmarshaler, sources ...TextBasedValueBinding) Field {
+func NewTextBasedField(dest encoding.TextUnmarshaler, sources ...TextBasedValueBinder) Field {
 	return newField(dest, len(sources), func(sourceNum int) valueBinding {
 		return vb(sources[sourceNum], sources[sourceNum].BindTextBasedValueTo(dest))
 	})
 }
 
-func NewBoolField(dest *bool, sources ...BoolValueBinding) Field {
+func NewBoolField(dest *bool, sources ...BoolValueBinder) Field {
 	return newField(dest, len(sources), func(sourceNum int) valueBinding {
 		return vb(sources[sourceNum], sources[sourceNum].BindBoolValueTo(dest))
 	})
 }
 
-func NewCustomField(dest interface{}, sources ...CustomValueBinding) Field {
+func NewCustomField(dest interface{}, sources ...CustomValueBinder) Field {
 	return newField(dest, len(sources), func(sourceNum int) valueBinding {
 		return vb(sources[sourceNum], sources[sourceNum].BindValue())
 	})

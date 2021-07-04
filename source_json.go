@@ -242,7 +242,7 @@ func (jba *jsonArrBinding) Len() int {
 	return len(jba.array)
 }
 
-func (jba *jsonArrBinding) Element(elNum int) LazySingleValueBinding {
+func (jba *jsonArrBinding) Element(elNum int) LazySingleValueBinder {
 	name := fmt.Sprintf("%s[%d]", jba.jb.name, elNum)
 	return &jsonBinding{
 		source: jba.jb.source,

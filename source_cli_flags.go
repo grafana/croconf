@@ -47,7 +47,7 @@ func (sc *SourceCLI) FromNameAndShorthand(name, shorthand string) *cliBinding {
 	}
 }
 
-func (sc *SourceCLI) FromPositionalArg(position int) LazySingleValueBinding {
+func (sc *SourceCLI) FromPositionalArg(position int) LazySingleValueBinder {
 	return &cliBinding{source: sc, position: position}
 }
 
@@ -204,7 +204,7 @@ func (cab cliArrayBinding) Len() int {
 	return len(cab.arr)
 }
 
-func (cab cliArrayBinding) Element(i int) LazySingleValueBinding {
+func (cab cliArrayBinding) Element(i int) LazySingleValueBinder {
 	cbcopy := *cab.cb
 	cbcopy.lookupfn = func() (string, error) {
 		if i >= len(cab.arr) {

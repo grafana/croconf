@@ -169,7 +169,7 @@ func (eva *envVarArray) Len() int {
 	return len(eva.array)
 }
 
-func (eva *envVarArray) Element(elNum int) LazySingleValueBinding {
+func (eva *envVarArray) Element(elNum int) LazySingleValueBinder {
 	name := fmt.Sprintf("%s[%d]", eva.eb.name, elNum)
 	return &envBinding{
 		source: eva.eb.source,

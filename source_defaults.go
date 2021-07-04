@@ -27,8 +27,8 @@ func (dsv defaultStringValue) Source() Source {
 }
 
 func DefaultStringValue(s string) interface {
-	StringValueBinding
-	TextBasedValueBinding
+	StringValueBinder
+	TextBasedValueBinder
 	BindingFromSource
 } {
 	return defaultStringValue(s)
@@ -48,7 +48,7 @@ func (div defaultIntValue) Source() Source {
 }
 
 func DefaultIntValue(i int64) interface {
-	IntValueBinding
+	IntValueBinder
 	BindingFromSource
 } {
 	return defaultIntValue(i)
@@ -57,7 +57,7 @@ func DefaultIntValue(i int64) interface {
 type DefaultCustomValue func()
 
 var _ interface {
-	CustomValueBinding
+	CustomValueBinder
 	BindingFromSource
 } = DefaultCustomValue(nil)
 

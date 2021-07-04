@@ -28,48 +28,48 @@ type BindingWithName interface {
 	BoundName() string
 }
 
-type LazySingleValueBinding interface {
-	StringValueBinding
-	IntValueBinding
-	UintValueBinding
-	FloatValueBinding
-	BoolValueBinding
-	TextBasedValueBinding
+type LazySingleValueBinder interface {
+	StringValueBinder
+	IntValueBinder
+	UintValueBinder
+	FloatValueBinder
+	BoolValueBinder
+	TextBasedValueBinder
 }
 
-type ArrayBinding interface {
+type ArrayBinder interface {
 	BindArray() func() (Array, error)
 }
 
 type Array interface { // TODO: rename to List and ListBinding?
 	Len() int
-	Element(int) LazySingleValueBinding
+	Element(int) LazySingleValueBinder
 }
 
-type StringValueBinding interface {
+type StringValueBinder interface {
 	BindStringValueTo(*string) func() error
 }
 
-type IntValueBinding interface {
+type IntValueBinder interface {
 	BindIntValueTo(*int64) func() error
 }
 
-type UintValueBinding interface {
+type UintValueBinder interface {
 	BindUintValueTo(*uint64) func() error
 }
 
-type FloatValueBinding interface {
+type FloatValueBinder interface {
 	BindFloatValueTo(*float64) func() error
 }
 
-type BoolValueBinding interface {
+type BoolValueBinder interface {
 	BindBoolValueTo(dest *bool) func() error
 }
 
-type TextBasedValueBinding interface {
+type TextBasedValueBinder interface {
 	BindTextBasedValueTo(dest encoding.TextUnmarshaler) func() error
 }
 
-type CustomValueBinding interface {
+type CustomValueBinder interface {
 	BindValue() func() error
 }

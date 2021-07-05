@@ -34,7 +34,7 @@ func GetSubcommandHandler(
 		subCommandIDs = append(subCommandIDs, sc.Command)
 		subCommandsByID[sc.Command] = sc
 	}
-	possibleValues := fmt.Sprintf("possible values: %v", subCommandIDs)
+	possibleValues := fmt.Sprintf("possible values: %s", strings.Join(subCommandIDs, ", "))
 
 	var showHelp bool
 	var subCommand string

@@ -1,24 +1,25 @@
-package main
+package config
 
 import (
 	"go.k6.io/croconf"
+	"go.k6.io/croconf/example/types"
 	"go.k6.io/k6/lib"
 	"go.k6.io/k6/lib/executor"
 )
 
 type ScriptConfig struct {
-	cm *croconf.Manager
 	*GlobalConfig
+	// TODO: json.Marshaler
 
 	UserAgent string
 	VUs       int64
 
 	Throw bool
 
-	Duration Duration
+	Duration types.Duration
 
 	DNS struct {
-		TTL    Duration
+		TTL    types.Duration
 		Server string
 	}
 
@@ -28,18 +29,18 @@ type ScriptConfig struct {
 	Scenarios1 lib.ScenarioConfigs
 
 	Scenarios2 lib.ScenarioConfigs
-
-	// TODO: have a sub-config
 }
 
-func NewScriptConfig(
-	globalConf *GlobalConfig,
-	cliSource *croconf.SourceCLI,
-	envVarsSource *croconf.SourceEnvVars,
-	jsonSource *croconf.SourceJSON,
-) (*ScriptConfig, error) {
-	cm := croconf.NewManager()
-	conf := &ScriptConfig{GlobalConfig: globalConf, cm: cm} // TODO: somehow save the sources in the struct as well?
+// TODO: split apart in multiple functions, one per section?
+func NewScriptConfig( //nolint: funlen
+	cm *croconf.Manager, globalConf *GlobalConfig,
+	cliSource *croconf.SourceCLI, envVarsSource *croconf.SourceEnvVars, jsonSource *croconf.SourceJSON,
+) *ScriptConfig {
+	conf := &ScriptConfig{
+		GlobalConfig: globalConf,
+		// TODO: implement something like this:
+		// Marshaler:    jsonSource.NewMarshaller(),
+	}
 
 	cm.AddField(
 		croconf.NewStringField(
@@ -125,45 +126,11 @@ func NewScriptConfig(
 		}),
 		jsonSource.From("scenarios1").To(&conf.Scenarios1),
 	))
+
 	// This is another way to do it, with a small custom type:
 	cm.AddField(&scenariosField{dest: &conf.Scenarios2, source: jsonSource, id: "scenarios2"})
 
-	// TODO: add the other options and actually process and consolidate the
-	// config values and handle any errors... Here we probably want to error out
-	// if we see unknown CLI flags or JSON options
+	// TODO: add the other options
 
-	if err := cm.Consolidate(); err != nil {
-		return nil, err
-	}
-
-	return conf, nil
-}
-
-type scenariosField struct {
-	dest   *lib.ScenarioConfigs
-	source *croconf.SourceJSON
-	id     string
-}
-
-func (sf *scenariosField) Destination() interface{} {
-	return sf.dest
-}
-
-func (sf *scenariosField) Bindings() []croconf.Binding {
-	return []croconf.Binding{
-		croconf.NewCallbackBinding(func() error {
-			*sf.dest = lib.ScenarioConfigs{
-				lib.DefaultScenarioName: executor.NewPerVUIterationsConfig(lib.DefaultScenarioName),
-			}
-			return nil
-		}),
-		croconf.NewCallbackBindingFromSource(sf.source, sf.id, func() error {
-			jsonVal, ok := sf.source.Lookup(sf.id)
-			if !ok {
-				return nil
-			}
-
-			return sf.dest.UnmarshalJSON(jsonVal)
-		}),
-	}
+	return conf
 }

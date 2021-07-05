@@ -3,41 +3,62 @@ package croconf
 import (
 	"errors"
 	"fmt"
+	"reflect"
 )
 
 type ManagedField struct {
 	Field
 
+	wasConsolidated       bool
 	lastBindingFromSource BindingFromSource // nil for default value
 
-	Name        string
-	Description string
-	Required    bool
-	Validator   func() error
+	Name         string
+	DefaultValue string
+	Description  string
+	Required     bool
+	Validator    func() error
 	// TODO: other meta information? e.g. deprecation warnings, usage
-	// information and examples, annotations, etc.
+	// information and examples, possible values, annotations, etc.
 }
 
-func (mf *ManagedField) ApplyDefault() error {
-	for _, binding := range mf.Field.Bindings() {
-		if fromSource, ok := binding.(BindingFromSource); ok {
-			// nil source means the default value
-			if fromSource.Source() == nil {
-				return fromSource.Apply()
-			}
-		}
+func (mf *ManagedField) getCurrentValueAsString() string {
+	dest := mf.Destination()
+	if stringer, ok := dest.(fmt.Stringer); ok {
+		return stringer.String()
 	}
-	return nil
+
+	// TODO: check for encoding.TextMarshaler?
+
+	// Since the destination is likely a pointer, we dereference it here
+	value := reflect.Indirect(reflect.ValueOf(dest)).Interface()
+	if stringer, ok := value.(fmt.Stringer); ok {
+		return stringer.String()
+	}
+
+	// TODO: check for encoding.TextMarshaler?
+
+	return fmt.Sprintf("%v", value)
 }
 
 func (mf *ManagedField) Consolidate() []error {
+	if mf.wasConsolidated {
+		return nil
+	}
 	// TODO: verify that sources have been initialized
+
+	mf.DefaultValue = mf.getCurrentValueAsString()
+
 	var errs []error
 	for _, binding := range mf.Field.Bindings() {
 		err := binding.Apply()
 		if err == nil {
 			if fromSource, ok := binding.(BindingFromSource); ok {
 				mf.lastBindingFromSource = fromSource
+
+				if fromSource.Source() == nil {
+					// This was a default value
+					mf.DefaultValue = mf.getCurrentValueAsString()
+				}
 			}
 			continue
 		}
@@ -46,6 +67,7 @@ func (mf *ManagedField) Consolidate() []error {
 			errs = append(errs, err)
 		}
 	}
+	mf.wasConsolidated = true
 	return errs
 }
 
@@ -68,27 +90,27 @@ func (mf *ManagedField) Validate() error {
 	return nil
 }
 
-type FieldOption func(*ManagedField)
+type ManagedFieldOption func(*ManagedField)
 
-func WithName(name string) FieldOption {
+func WithName(name string) ManagedFieldOption {
 	return func(mfield *ManagedField) {
 		mfield.Name = name
 	}
 }
 
-func WithDescription(description string) FieldOption {
+func WithDescription(description string) ManagedFieldOption {
 	return func(mfield *ManagedField) {
 		mfield.Description = description
 	}
 }
 
-func WithValidator(validator func() error) FieldOption {
+func WithValidator(validator func() error) ManagedFieldOption {
 	return func(mfield *ManagedField) {
 		mfield.Validator = validator
 	}
 }
 
-func IsRequired() FieldOption {
+func IsRequired() ManagedFieldOption {
 	return func(mfield *ManagedField) {
 		mfield.Required = true
 	}

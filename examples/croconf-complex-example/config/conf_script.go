@@ -2,7 +2,7 @@ package config
 
 import (
 	"go.k6.io/croconf"
-	"go.k6.io/croconf/example/types"
+	"go.k6.io/croconf/examples/croconf-complex-example/types"
 	"go.k6.io/k6/lib"
 	"go.k6.io/k6/lib/executor"
 )
@@ -88,11 +88,14 @@ func NewScriptConfig( //nolint: funlen
 	)
 
 	// Properties of a nested struct (without a pointer!)
-	cm.AddField(croconf.NewTextBasedField(
-		&conf.DNS.TTL,
-		croconf.DefaultStringValue("10m"),
-		jsonSource.From("dns").From("ttl"),
-	))
+	cm.AddField(
+		croconf.NewTextBasedField(
+			&conf.DNS.TTL,
+			croconf.DefaultStringValue("10m"),
+			jsonSource.From("dns").From("ttl"),
+		),
+		croconf.WithDescription("TTL for DNS queries"),
+	)
 
 	cm.AddField(croconf.NewStringField(
 		&conf.DNS.Server,

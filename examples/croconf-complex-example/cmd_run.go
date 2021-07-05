@@ -9,7 +9,7 @@ import (
 	"log"
 
 	"go.k6.io/croconf"
-	"go.k6.io/croconf/example/config"
+	"go.k6.io/croconf/examples/croconf-complex-example/config"
 )
 
 //nolint:forbidigo

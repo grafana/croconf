@@ -101,6 +101,10 @@ func (m *Manager) Field(dest interface{}) *ManagedField {
 	return m.fieldsByDest[dest]
 }
 
+func (m *Manager) Fields() []*ManagedField {
+	return m.fields
+}
+
 func (m *Manager) Consolidate() error {
 	var errs []error
 
@@ -131,26 +135,6 @@ func (m *Manager) Consolidate() error {
 	}
 
 	return consolidateErrorMessage(errs, "Validation errors: ")
-}
-
-// TODO: move this outide to the CLI framework? also, make it
-// customizable/templateable
-func (m *Manager) GetHelpText() string {
-	var sb strings.Builder
-	for _, field := range m.fields {
-		fmt.Fprintf(&sb, "Field '%s' (%s):\n", field.Name, field.Description)
-		fmt.Fprintf(&sb, "\tDefault value: %s\n", field.DefaultValue)
-		for _, b := range field.Bindings() {
-			if fromSource, ok := b.(BindingFromSource); ok && fromSource.Source() != nil {
-				fmt.Fprintf(
-					&sb, "\tFrom %s: %s\n",
-					fromSource.Source().GetName(), fromSource.BoundName(),
-				)
-			}
-		}
-	}
-
-	return sb.String()
 }
 
 func consolidateErrorMessage(errList []error, title string) error {

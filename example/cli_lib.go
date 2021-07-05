@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"go.k6.io/croconf"
 )
@@ -54,7 +55,7 @@ func GetSubcommandHandler(
 	return func() error {
 		if subCommand == "" {
 			if showHelp {
-				fmt.Println(cm.GetHelpText())
+				fmt.Println(getHelp(cm))
 				return nil
 			} else {
 				return fmt.Errorf("you have to specify a sub-command (%s), run with --help for help", possibleValues)
@@ -72,10 +73,29 @@ func GetSubcommandHandler(
 
 		if showHelp {
 			fmt.Printf("Help for subcommand %s:\n\n", subCommand)
-			fmt.Println(cm.GetHelpText())
+			fmt.Println(getHelp(cm))
 			return nil
 		}
 
 		return subCmd.Run()
 	}, nil
+}
+
+// TODO: make this customizable/templateable
+func getHelp(cm *croconf.Manager) string {
+	var sb strings.Builder
+	for _, field := range cm.Fields() {
+		fmt.Fprintf(&sb, "Field '%s' (%s):\n", field.Name, field.Description)
+		fmt.Fprintf(&sb, "\tDefault value: %s\n", field.DefaultValue)
+		for _, b := range field.Bindings() {
+			if fromSource, ok := b.(croconf.BindingFromSource); ok && fromSource.Source() != nil {
+				fmt.Fprintf(
+					&sb, "\tFrom %s: %s\n",
+					fromSource.Source().GetName(), fromSource.BoundName(),
+				)
+			}
+		}
+	}
+
+	return sb.String()
 }

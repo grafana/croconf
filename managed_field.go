@@ -3,6 +3,7 @@ package croconf
 import (
 	"errors"
 	"fmt"
+	"reflect"
 )
 
 type ManagedField struct {
@@ -11,24 +12,29 @@ type ManagedField struct {
 	wasConsolidated       bool
 	lastBindingFromSource BindingFromSource // nil for default value
 
-	Name        string
-	Description string
-	Required    bool
-	Validator   func() error
+	Name         string
+	DefaultValue string
+	Description  string
+	Required     bool
+	Validator    func() error
 	// TODO: other meta information? e.g. deprecation warnings, usage
 	// information and examples, annotations, etc.
 }
 
-func (mf *ManagedField) ApplyDefault() error {
-	for _, binding := range mf.Field.Bindings() {
-		if fromSource, ok := binding.(BindingFromSource); ok {
-			// nil source means the default value
-			if fromSource.Source() == nil {
-				return fromSource.Apply()
-			}
-		}
+func (mf *ManagedField) getCurrentValueAsString() string {
+	dest := mf.Destination()
+	if stringer, ok := dest.(fmt.Stringer); ok {
+		return stringer.String()
 	}
-	return nil
+
+	value := reflect.Indirect(reflect.ValueOf(dest)).Interface()
+	if stringer, ok := value.(fmt.Stringer); ok {
+		return stringer.String()
+	}
+
+	// TODO: check for encoding.TextMarshaler?
+
+	return fmt.Sprintf("%v", value)
 }
 
 func (mf *ManagedField) Consolidate() []error {
@@ -36,12 +42,20 @@ func (mf *ManagedField) Consolidate() []error {
 		return nil
 	}
 	// TODO: verify that sources have been initialized
+
+	mf.DefaultValue = mf.getCurrentValueAsString()
+
 	var errs []error
 	for _, binding := range mf.Field.Bindings() {
 		err := binding.Apply()
 		if err == nil {
 			if fromSource, ok := binding.(BindingFromSource); ok {
 				mf.lastBindingFromSource = fromSource
+
+				if fromSource.Source() == nil {
+					// This was a default value
+					mf.DefaultValue = mf.getCurrentValueAsString()
+				}
 			}
 			continue
 		}

@@ -139,7 +139,7 @@ func (m *Manager) GetHelpText() string {
 	var sb strings.Builder
 	for _, field := range m.fields {
 		fmt.Fprintf(&sb, "Field '%s' (%s):\n", field.Name, field.Description)
-
+		fmt.Fprintf(&sb, "\tDefault value: %s\n", field.DefaultValue)
 		for _, b := range field.Bindings() {
 			if fromSource, ok := b.(BindingFromSource); ok && fromSource.Source() != nil {
 				fmt.Fprintf(

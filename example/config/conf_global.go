@@ -1,8 +1,6 @@
 package config
 
 import (
-	"fmt"
-
 	"go.k6.io/croconf"
 )
 
@@ -10,10 +8,6 @@ type GlobalConfig struct {
 	Verbose        bool
 	JSONConfigPath string
 	// TODO: other global or runtime options...
-
-	// TODO: move out of here
-	SubCommand string // run, cloud, inspect, archive, etc.
-	ShowHelp   bool
 }
 
 func NewGlobalConfig(
@@ -41,29 +35,6 @@ func NewGlobalConfig(
 	)
 
 	// TODO: add the other global options and properties
-
-	// TODO: move to CLI framework helper
-	cm.AddField(
-		croconf.NewStringField(
-			&conf.SubCommand,
-			cliSource.FromPositionalArg(1),
-		),
-		croconf.WithDescription("k6 sub-command"),
-		croconf.WithValidator(func() error {
-			if conf.SubCommand != "" && conf.SubCommand != "run" && conf.SubCommand != "cloud" {
-				return fmt.Errorf("invalid sub-command %s", conf.SubCommand)
-			}
-			return nil
-		}),
-	)
-
-	cm.AddField(
-		croconf.NewBoolField(
-			&conf.ShowHelp,
-			cliSource.FromNameAndShorthand("help", "h"),
-		),
-		croconf.WithDescription("show help information"),
-	)
 
 	return conf
 }

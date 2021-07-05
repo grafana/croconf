@@ -18,7 +18,7 @@ type ManagedField struct {
 	Required     bool
 	Validator    func() error
 	// TODO: other meta information? e.g. deprecation warnings, usage
-	// information and examples, annotations, etc.
+	// information and examples, possible values, annotations, etc.
 }
 
 func (mf *ManagedField) getCurrentValueAsString() string {
@@ -27,6 +27,9 @@ func (mf *ManagedField) getCurrentValueAsString() string {
 		return stringer.String()
 	}
 
+	// TODO: check for encoding.TextMarshaler?
+
+	// Since the destination is likely a pointer, we dereference it here
 	value := reflect.Indirect(reflect.ValueOf(dest)).Interface()
 	if stringer, ok := value.(fmt.Stringer); ok {
 		return stringer.String()

@@ -5,14 +5,12 @@ import (
 )
 
 type SourceGoMap struct {
-	values map[string]interface{}
+	fields map[string]interface{}
 }
 
-func NewGoMapSource(values map[string]interface{}) *SourceGoMap {
-	return &SourceGoMap{values: values}
+func NewGoMapSource(fields map[string]interface{}) *SourceGoMap {
+	return &SourceGoMap{fields: fields}
 }
-
-// TODO: implement something like https://github.com/mitchellh/mapstructure
 
 func (sm *SourceGoMap) GetName() string {
 	return "go map"
@@ -21,12 +19,15 @@ func (sm *SourceGoMap) GetName() string {
 func (sm *SourceGoMap) Initialize() error { return nil }
 
 func (sm *SourceGoMap) Lookup(name string) (interface{}, bool) {
-	res, ok := sm.values[name]
+	res, ok := sm.fields[name]
+	if !ok {
+		return nil, false
+	}
 	return res, ok
 }
 
-func (sm *SourceGoMap) From(name string) *gomapBinding {
-	return &gomapBinding{
+func (sm *SourceGoMap) From(name string) *gomapBinder {
+	return &gomapBinder{
 		source: sm,
 		name:   name,
 		lookup: func() (interface{}, error) {
@@ -39,18 +40,15 @@ func (sm *SourceGoMap) From(name string) *gomapBinding {
 	}
 }
 
-type gomapBinding struct {
+// TODO: export and rename? e.g. to JSONProperty?
+type gomapBinder struct {
 	source Source
 	lookup func() (interface{}, error)
 	name   string
 }
 
-func (mb *gomapBinding) GetSource() Source {
-	return mb.source
-}
-
-func (mb *gomapBinding) From(name string) *gomapBinding {
-	return &gomapBinding{
+func (mb *gomapBinder) From(name string) *gomapBinder {
+	return &gomapBinder{
 		source: mb.source,
 		name:   mb.name + "." + name,
 		lookup: func() (interface{}, error) {
@@ -76,8 +74,19 @@ func (mb *gomapBinding) From(name string) *gomapBinding {
 	}
 }
 
-func (mb *gomapBinding) BindStringValueTo(dest *string) func() error {
-	return func() error {
+func (mb *gomapBinder) newBinding(apply func() error) *gomapBinding {
+	return &gomapBinding{
+		binder: mb,
+		apply:  apply,
+	}
+}
+
+///
+//
+//
+
+func (mb *gomapBinder) BindStringValueTo(dest *string) Binding {
+	return mb.newBinding(func() error {
 		raw, err := mb.lookup()
 		if err != nil {
 			return err
@@ -85,142 +94,81 @@ func (mb *gomapBinding) BindStringValueTo(dest *string) func() error {
 
 		val, ok := raw.(string)
 		if !ok {
-			return fmt.Errorf("failed cast value for key=%s as a string", mb.name)
+			return NewBindValueError("BindStringValueTo", fmt.Sprintf("%v", raw), fmt.Errorf("casting string failed"))
 		}
 		*dest = val
 		return nil
-
-	}
+	})
 }
 
-func (mb *gomapBinding) BindIntValue() func(bitSize int) (int64, error) {
-	return func(bitSize int) (int64, error) {
+func (mb *gomapBinder) BindIntValueTo(dest *int64) Binding {
+	return mb.newBinding(func() error {
 		raw, err := mb.lookup()
 		if err != nil {
-			return 0, NewBindFieldMissingError(mb.source.GetName(), mb.name)
+			return NewBindFieldMissingError(mb.source.GetName(), mb.name)
 		}
-
-		var val int64
-		switch bitSize {
-		case 0:
-			v, ok := raw.(int)
-			if !ok {
-				return 0, fmt.Errorf("failed cast value for key=%s as a int", mb.name)
-			}
-			val = int64(v)
-
-		case 8:
-			v, ok := raw.(int8)
-			if !ok {
-				return 0, fmt.Errorf("failed cast value for key=%s as a int8", mb.name)
-			}
-			val = int64(v)
-
-		case 16:
-			v, ok := raw.(int16)
-			if !ok {
-				return 0, fmt.Errorf("failed cast value for key=%s as a int16", mb.name)
-			}
-			val = int64(v)
-
-		case 32:
-			v, ok := raw.(int32)
-			if !ok {
-				return 0, fmt.Errorf("failed cast value for key=%s as a int32", mb.name)
-			}
-			val = int64(v)
-
-		case 64:
-			v, ok := raw.(int64)
-			if !ok {
-				return 0, fmt.Errorf("failed cast value for key=%s as a int64", mb.name)
-			}
-			val = v
+		switch val := raw.(type) {
+		case int:
+			*dest = int64(val)
+		case int8:
+			*dest = int64(val)
+		case int16:
+			*dest = int64(val)
+		case int32:
+			*dest = int64(val)
+		case int64:
+			*dest = val
+		default:
+			return NewBindValueError("BindIntValueTo", fmt.Sprintf("%v", raw), fmt.Errorf("casting any int* type failed"))
 		}
-
-		return val, nil
-	}
+		return nil
+	})
 }
 
-func (mb *gomapBinding) BindUintValue() func(bitSize int) (uint64, error) {
-	return func(bitSize int) (uint64, error) {
+func (mb *gomapBinder) BindUintValueTo(dest *uint64) Binding {
+	return mb.newBinding(func() error {
 		raw, err := mb.lookup()
 		if err != nil {
-			return 0, NewBindFieldMissingError(mb.source.GetName(), mb.name)
+			return NewBindFieldMissingError(mb.source.GetName(), mb.name)
 		}
-
-		var val uint64
-		switch bitSize {
-		case 0:
-			v, ok := raw.(uint)
-			if !ok {
-				return 0, fmt.Errorf("failed cast value for key=%s as a uint", mb.name)
-			}
-			val = uint64(v)
-
-		case 8:
-			v, ok := raw.(uint8)
-			if !ok {
-				return 0, fmt.Errorf("failed cast value for key=%s as a uint8", mb.name)
-			}
-			val = uint64(v)
-
-		case 16:
-			v, ok := raw.(uint16)
-			if !ok {
-				return 0, fmt.Errorf("failed cast value for key=%s as a uint16", mb.name)
-			}
-			val = uint64(v)
-
-		case 32:
-			v, ok := raw.(uint32)
-			if !ok {
-				return 0, fmt.Errorf("failed cast value for key=%s as a uint32", mb.name)
-			}
-			val = uint64(v)
-
-		case 64:
-			v, ok := raw.(uint64)
-			if !ok {
-				return 0, fmt.Errorf("failed cast value for key=%s as a uint64", mb.name)
-			}
-			val = v
+		switch val := raw.(type) {
+		case uint:
+			*dest = uint64(val)
+		case uint8:
+			*dest = uint64(val)
+		case uint16:
+			*dest = uint64(val)
+		case uint32:
+			*dest = uint64(val)
+		case uint64:
+			*dest = val
+		default:
+			return NewBindValueError("BindUintValueTo", fmt.Sprintf("%v", raw), fmt.Errorf("casting any uint* type failed"))
 		}
-
-		return val, nil
-	}
+		return nil
+	})
 }
 
-func (mb *gomapBinding) BindFloatValue() func(bitSize int) (float64, error) {
-	return func(bitSize int) (float64, error) {
+func (mb *gomapBinder) BindFloatValueTo(dest *float64) Binding {
+	return mb.newBinding(func() error {
 		raw, err := mb.lookup()
 		if err != nil {
-			return 0, NewBindFieldMissingError(mb.source.GetName(), mb.name)
+			return NewBindFieldMissingError(mb.source.GetName(), mb.name)
 		}
-
-		var val float64
-		switch bitSize {
-		case 32:
-			v, ok := raw.(float32)
-			if !ok {
-				return 0, fmt.Errorf("failed cast value for key=%s as a float32", mb.name)
-			}
-			val = float64(v)
-
-		case 64:
-			v, ok := raw.(float64)
-			if !ok {
-				return 0, fmt.Errorf("failed cast value for key=%s as a float64", mb.name)
-			}
-			val = v
+		switch val := raw.(type) {
+		case float32:
+			*dest = float64(val)
+		case float64:
+			*dest = val
+		default:
+			return NewBindValueError("BindFloatValueTo", fmt.Sprintf("%v", raw), fmt.Errorf("casting any float* type failed"))
 		}
-
-		return val, nil
-	}
+		return nil
+	})
 }
 
-func (mb *gomapBinding) BindBoolValueTo(dest *bool) func() error {
-	return func() error {
+func (mb *gomapBinder) BindBoolValueTo(dest *bool) Binding {
+	return mb.newBinding(func() error {
 		raw, err := mb.lookup()
 		if err != nil {
 			return err
@@ -228,9 +176,35 @@ func (mb *gomapBinding) BindBoolValueTo(dest *bool) func() error {
 
 		v, ok := raw.(bool)
 		if !ok {
-			return fmt.Errorf("failed cast value for key=%s as a bool", mb.name)
+			return NewBindValueError("BindBoolValueTo", fmt.Sprintf("%v", raw), fmt.Errorf("casting bool failed"))
 		}
 		*dest = v
 		return nil
-	}
+	})
+}
+
+// TODO: BindArrayValueTo
+// func (mb *gomapBinder) BindArrayValueTo(length *int, element *func(int) LazySingleValueBinder) Binding {
+// }
+
+type gomapBinding struct {
+	binder *gomapBinder
+	apply  func() error
+}
+
+var _ interface {
+	Binding
+	BindingFromSource
+} = &gomapBinding{}
+
+func (gmb *gomapBinding) Apply() error {
+	return gmb.apply()
+}
+
+func (gmb *gomapBinding) Source() Source {
+	return gmb.binder.source
+}
+
+func (gmb *gomapBinding) BoundName() string {
+	return gmb.binder.name
 }

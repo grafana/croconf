@@ -1,202 +1,134 @@
 package croconf
 
 import (
-	"fmt"
 	"testing"
 )
 
 func TestGoMapBindIntValue(t *testing.T) {
+	t.Parallel()
 	gomap := map[string]interface{}{
-		"k6_vus_0": 6, "k6_vus_8": int8(6), "k6_vus_16": int16(6), "k6_vus_32": int32(6), "k6_vus_64": int64(6),
-		"pi": 3.14, "k6_config": "./config.json", "k6_user_agent": "foo"}
+		"k6_vus": 6, "pi": 3.14, "k6_config": "./config.json", "k6_user_agent": "foo"}
 
-	withFixedBytesSizeFunc := func(bytesSize int) {
+	source := NewGoMapSource(gomap)
+	vus := source.From("k6_vus")
+	k6UserAgent := source.From("k6_user_agent")
+	missed := source.From("missed")
 
-		source := NewGoMapSource(gomap)
-		vusKey := fmt.Sprintf("k6_vus_%d", bytesSize)
-		vus := source.From(vusKey)
-		k6UserAgent := source.From("k6_user_agent")
-		missed := source.From("missed")
-
-		if err := source.Initialize(); err != nil {
-			t.Error(err)
-		}
-
-		val, err := vus.BindIntValue()(bytesSize)
-		expected := int64(6)
-		if err != nil {
-			t.Errorf("BindIntValue error: %s", err)
-		}
-		if val != expected {
-			t.Errorf("BindIntValue: got %d, expected %d", val, expected)
-		}
-
-		_, err = missed.BindIntValue()(bytesSize)
-		if err == nil {
-			t.Error("BindIntValue: expected field missing error")
-		}
-		if err.Error() != "field missed is missing in config source go map" {
-			t.Error("BindIntValue: unexpected error message:", err)
-		}
-
-		_, err = k6UserAgent.BindIntValue()(bytesSize)
-		if err == nil {
-			t.Error("BindIntValue: expected error")
-		}
+	if err := source.Initialize(); err != nil {
+		t.Fatalf("received an unexpected init error %s", err)
 	}
 
-	intBytesSizes := []int{0, 8, 16, 32, 64}
+	var val int64
+	valBinding := vus.BindIntValueTo(&val)
+	err := valBinding.Apply()
+	if err != nil {
+		t.Errorf("BindIntValueTo error: %s", err)
+	}
+	if expected := int64(6); val != expected {
+		t.Errorf("BindIntValueTo: got %d, expected %d", val, expected)
+	}
 
-	for _, byteSize := range intBytesSizes {
-		withFixedBytesSizeFunc(byteSize)
+	valBinding = missed.BindIntValueTo(&val)
+	err = valBinding.Apply()
+	if err == nil {
+		t.Error("BindIntValueTo: expected field missing error")
+	}
+	if err.Error() != "field missed is missing in config source go map" {
+		t.Error("BindIntValueTo: unexpected error message:", err)
+	}
+
+	valBinding = k6UserAgent.BindIntValueTo(&val)
+	err = valBinding.Apply()
+	if err == nil {
+		t.Error("BindIntValueTo: expected syntax error")
+	}
+	if err.Error() != `BindIntValueTo: parsing "foo": casting any int* type failed` {
+		t.Error("BindIntValueTo: unexpected error message:", err)
 	}
 }
 
 func TestGoMapBindUintValue(t *testing.T) {
+	t.Parallel()
 	gomap := map[string]interface{}{
-		"k6_vus_0": uint(6), "k6_vus_8": uint8(6), "k6_vus_16": uint16(6), "k6_vus_32": uint32(6), "k6_vus_64": uint64(6),
-		"pi": 3.14, "k6_config": "./config.json", "k6_user_agent": "foo"}
+		"k6_vus": uint(6), "pi": 3.14, "k6_config": "./config.json", "k6_user_agent": "foo"}
 
-	withFixedBytesSizeFunc := func(bytesSize int) {
+	source := NewGoMapSource(gomap)
+	vus := source.From("k6_vus")
+	k6UserAgent := source.From("k6_user_agent")
+	missed := source.From("missed")
 
-		source := NewGoMapSource(gomap)
-		vusKey := fmt.Sprintf("k6_vus_%d", bytesSize)
-		vus := source.From(vusKey)
-		k6UserAgent := source.From("k6_user_agent")
-		missed := source.From("missed")
-
-		if err := source.Initialize(); err != nil {
-			t.Error(err)
-		}
-		val, err := vus.BindUintValue()(bytesSize)
-		expected := uint64(6)
-		if err != nil {
-			t.Errorf("BindUintValueTo error: %s", err)
-		}
-		if val != expected {
-			t.Errorf("BindUintValue: got %d, expected %d", val, expected)
-		}
-
-		_, err = missed.BindUintValue()(bytesSize)
-		if err == nil {
-			t.Error("BindUintValue: expected field k6_vus is missing error")
-		}
-		if err.Error() != "field missed is missing in config source go map" {
-			t.Error("BindUintValue: unexpected error message:", err)
-		}
-
-		_, err = k6UserAgent.BindUintValue()(bytesSize)
-		if err == nil {
-			t.Error("BindUintValue: expected syntax error")
-		}
+	if err := source.Initialize(); err != nil {
+		t.Fatalf("received an unexpected init error %s", err)
 	}
 
-	intBytesSizes := []int{0, 8, 16, 32, 64}
+	var val uint64
+	valBinding := vus.BindUintValueTo(&val)
+	err := valBinding.Apply()
+	if err != nil {
+		t.Errorf("BindUintValueTo error: %s", err)
+	}
+	if expected := uint64(6); val != expected {
+		t.Errorf("BindUintValueTo: got %d, expected %d", val, expected)
+	}
 
-	for _, byteSize := range intBytesSizes {
-		withFixedBytesSizeFunc(byteSize)
+	valBinding = missed.BindUintValueTo(&val)
+	err = valBinding.Apply()
+	if err == nil {
+		t.Error("BindUintValueTo: expected field missing error")
+	}
+	if err.Error() != "field missed is missing in config source go map" {
+		t.Error("BindUintValueTo: unexpected error message:", err)
+	}
+
+	valBinding = k6UserAgent.BindUintValueTo(&val)
+	err = valBinding.Apply()
+	if err == nil {
+		t.Error("BindUintValueTo: expected syntax error")
+	}
+	if err.Error() != `BindUintValueTo: parsing "foo": casting any uint* type failed` {
+		t.Error("BindUintValueTo: unexpected error message:", err)
 	}
 }
 
-func TestGoMapFloatValue(t *testing.T) {
+func TestGoMapBindFloatValue(t *testing.T) {
+	t.Parallel()
 	gomap := map[string]interface{}{
-		"k6_vus": 6,
-		"pi_32":  float32(3.14), "pi_64": float64(3.14), "k6_config": "./config.json", "k6_user_agent": "foo"}
+		"k6_vus": 6, "pi": 3.14, "k6_config": "./config.json", "k6_user_agent": "foo"}
 
-	withFixedBytesSizeFunc := func(bytesSize int) {
+	source := NewGoMapSource(gomap)
+	pi := source.From("pi")
+	k6UserAgent := source.From("k6_user_agent")
+	missed := source.From("missed")
 
-		source := NewGoMapSource(gomap)
-		piKey := fmt.Sprintf("pi_%d", bytesSize)
-		pi := source.From(piKey)
-		vus := source.From("k6_vus")
-		k6UserAgent := source.From("k6_user_agent")
-		missed := source.From("missed")
-
-		if err := source.Initialize(); err != nil {
-			t.Error(err)
-		}
-
-		val, err := pi.BindFloatValue()(bytesSize)
-		expected := float64(3.14)
-		if err != nil {
-			t.Errorf("BindFloatValue error: %s", err)
-		}
-		// val != expected doesn't work
-		if (val-3.14) > 1e20 && (val-3.14) < -1e20 {
-			t.Errorf("BindFloatValue: got %f, expected %f", val, expected)
-		}
-
-		val, err = vus.BindFloatValue()(bytesSize)
-		expected = float64(6)
-		if err == nil {
-			t.Errorf("BindFloatValue expected error")
-		}
-
-		_, err = missed.BindFloatValue()(bytesSize)
-		if err == nil {
-			t.Error("BindFloatValue: expected field missing error")
-		}
-		if err.Error() != "field missed is missing in config source go map" {
-			t.Error("BindFloatValue: unexpected error message:", err)
-		}
-
-		_, err = k6UserAgent.BindFloatValue()(bytesSize)
-		if err == nil {
-			t.Error("BindFloatValue: expected syntax error")
-		}
+	if err := source.Initialize(); err != nil {
+		t.Fatalf("received an unexpected init error %s", err)
 	}
 
-	intBytesSizes := []int{32, 64}
-
-	for _, byteSize := range intBytesSizes {
-		withFixedBytesSizeFunc(byteSize)
+	var val float64
+	valBinding := pi.BindFloatValueTo(&val)
+	err := valBinding.Apply()
+	if err != nil {
+		t.Errorf("BindFloatValueTo error: %s", err)
 	}
-}
-
-func TestGoMapBindIntValue__NestedGoMap(t *testing.T) {
-	gomap := map[string]interface{}{
-		"data": map[string]interface{}{
-			"k6_vus_0": 6, "k6_vus_8": int8(6), "k6_vus_16": int16(6), "k6_vus_32": int32(6), "k6_vus_64": int64(6),
-			"pi": 3.14, "k6_config": "./config.json", "k6_user_agent": "foo"}}
-
-	withFixedBytesSizeFunc := func(bytesSize int) {
-
-		source := NewGoMapSource(gomap)
-		vusKey := fmt.Sprintf("k6_vus_%d", bytesSize)
-		vus := source.From("data").From(vusKey)
-		k6UserAgent := source.From("data").From("k6_user_agent")
-		missed := source.From("data").From("missed")
-
-		if err := source.Initialize(); err != nil {
-			t.Error(err)
-		}
-
-		val, err := vus.BindIntValue()(bytesSize)
-		expected := int64(6)
-		if err != nil {
-			t.Errorf("BindIntValue error: %s", err)
-		}
-		if val != expected {
-			t.Errorf("BindIntValue: got %d, expected %d", val, expected)
-		}
-
-		_, err = missed.BindIntValue()(bytesSize)
-		if err == nil {
-			t.Error("BindIntValue: expected field missing error")
-		}
-		if err.Error() != "field data.missed is missing in config source go map" {
-			t.Error("BindIntValue: unexpected error message:", err)
-		}
-
-		_, err = k6UserAgent.BindIntValue()(bytesSize)
-		if err == nil {
-			t.Error("BindIntValue: expected error")
-		}
+	if expected := float64(3.14); val != expected {
+		t.Errorf("BindFloatValueTo: got %f, expected %f", val, expected)
 	}
 
-	intBytesSizes := []int{0, 8, 16, 32, 64}
+	valBinding = missed.BindFloatValueTo(&val)
+	err = valBinding.Apply()
+	if err == nil {
+		t.Error("BindFloatValueTo: expected field missing error")
+	}
+	if err.Error() != "field missed is missing in config source go map" {
+		t.Error("BindFloatValueTo: unexpected error message:", err)
+	}
 
-	for _, byteSize := range intBytesSizes {
-		withFixedBytesSizeFunc(byteSize)
+	valBinding = k6UserAgent.BindFloatValueTo(&val)
+	err = valBinding.Apply()
+	if err == nil {
+		t.Error("BindFloatValueTo: expected syntax error")
+	}
+	if err.Error() != `BindFloatValueTo: parsing "foo": casting any float* type failed` {
+		t.Error("BindFloatValueTo: unexpected error message:", err)
 	}
 }

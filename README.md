@@ -129,7 +129,7 @@ croconf comes from _croco_-dile _conf_-iguration. So, :crocodile: not :croatia: 
 
 ## Remaining tasks
 
-As mentioned above, this library is still in the proof-of-concept stage. It is usable for toy projects, but it is very far from production-ready. These are some of the remaining tasks:
+As mentioned above, this library is still in the proof-of-concept stage. It is usable for toy projects and experiments, but it is very far from production-ready. These are some of the remaining tasks:
 - Refactor module structure and type names
 - More value sources (e.g. TOML, YAML, INI, etc.) and improvements in the current ones
 - Add built-in support for all Go basic and common stdlib types and interfaces
@@ -138,6 +138,6 @@ As mentioned above, this library is still in the proof-of-concept stage. It is u
 - Documentation and examples
 - Better (more user-friendly) error messages
 - An equivalent to [cobra](https://github.com/spf13/cobra)-like or [kong](https://github.com/alecthomas/kong), a wrapper for CLI application frameworks that is able to handle CLI sub-commands, shell autocompletion, etc.
-    - _ currently only toy PoC for this concept exists in [`examples/croconf-complex-example/`](https://github.com/k6io/croconf/tree/main/examples/croconf-complex-example)_
+    - _currently only toy PoC for this concept exists in [`examples/croconf-complex-example/`](https://github.com/k6io/croconf/tree/main/examples/croconf-complex-example)_
 - Add drop-in support for marshaling config structs (e.g. to JSON) with the same format they were unmarshaled from.
 - Be able to emit errors on unknown CLI flags, JSON options, etc.

@@ -13,7 +13,7 @@ import (
 	"go.k6.io/croconf"
 )
 
-// SimpleConfig is a normal Go struct with plain Go property types
+// SimpleConfig is a normal Go struct with plain Go property types.
 type SimpleConfig struct {
 	RPPs int64
 	DNS  struct {
@@ -23,6 +23,7 @@ type SimpleConfig struct {
 	// ... more config fields...
 }
 
+// NewScriptConfig defines the sources and metadata for every config field.
 func NewScriptConfig(
 	cm *croconf.Manager, cliSource *croconf.SourceCLI,
 	envVarsSource *croconf.SourceEnvVars, jsonSource *croconf.SourceJSON,
@@ -59,9 +60,10 @@ func NewScriptConfig(
 
 func main() {
 	configManager := croconf.NewManager()
+	// Manually create config sources - fully testable, no implicit shared globals!
 	cliSource := croconf.NewSourceFromCLIFlags(os.Args[1:])
 	envVarsSource := croconf.NewSourceFromEnv(os.Environ())
-	jsonSource := croconf.NewJSONSource(getJsonConfig())
+	jsonSource := croconf.NewJSONSource(getJSONConfigContents())
 
 	config := NewScriptConfig(configManager, cliSource, envVarsSource, jsonSource)
 
@@ -73,10 +75,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("error marshaling JSON: %s", err)
 	}
-	fmt.Fprintf(os.Stdout, string(jsonResult))
+	fmt.Fprint(os.Stdout, string(jsonResult))
 }
 
-func getJsonConfig() []byte {
+func getJSONConfigContents() []byte {
 	// See the croconf-complex-example for how this path can be configured from
 	// the CLI flags or environment variables in a multi-step process.
 	jsonConfigContents, err := ioutil.ReadFile("./config.json")

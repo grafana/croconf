@@ -1,54 +1,144 @@
-# croconf
+<h1 align="center">croconf</h1>
+<h4 align="center">A flexible and composable configuration library for Go</h4>
 
-A flexible and composable configuration library for Go that doesn't suck
+## Why?
 
-### Ned's spec for Go configuration which doesn't suck:
+There are plenty of [other Go configuration](https://github.com/avelino/awesome-go#configuration) and [CLI libraries](https://github.com/avelino/awesome-go#standard-cli) out there already - _insert [obligatory xkcd](https://github.com/avelino/awesome-go#standard-cli)_... :sweat_smile:  Unfortunately, most (all?) of them suffer from **at least** one of these serious issues and limitations:
+- Difficult to test:
+    - e.g. they rely directly on `os.Args()` or `os.Environ()` or some other shared global state
+    - can't check what results various inputs will produce without a lot of effort for managing that state
+- Difficult or impossible to extend - some variation of:
+    - limited value sources, e.g. they might support CLI flags and env vars, but not JSON or YAML
+    - you can't easily write your own custom first-class option types or value sources
+    - the value sources are not layered, values from different sources may be difficult or impossible to merge automatically
+- Untyped and reflection-heavy:
+    - they fail at run-time instead of compile-time
+    - e.g. your app panics because the type for some infrequently used and not very well tested option doesn't implement `encoding.TextUnmarshaler`
+    - struct tags may be used for _everything_ :scream:
+    - alternatively, you may have to do a ton of type assertions deep in your codebase
+- Un-queriable:
+    - there is no metadata about the final consolidated config values
+    - you cannot know if a certain option was set by the user or if its default value was used
+    - you may have to rely on `null`-able or other custom wrapper types for such information
+- Too `string`-y:
+    - you have to specify string IDs (e.g. CLI flag names, environment variable names, etc.) multiple times
+    - a typo in only some of these these strings might go unnoticed for a long while or cause a panic
 
-1. Fully testable: there is no relying on globals or `os` directly, everything is passed as parameters (e.g. it receives `os.Environ()` and `os.Args`, it doesn't directly access them).
-2. Supports layered configs: users can construct hierarchies of json/yaml/toml/env vars/CLI flags/etc., and the library will merge them
-3. Uses normal and simple Go types:
-    - the end value should be a plain old Go `struct` with plain old Go types (e.g. `string`, `int`, etc.)
-    - at the same time, users should have a way to query and access metadata to answer questions like "Has field `X` been changed?", "What is the default value of field `Y`?", etc.
-    - there will be no custom types to check if an entry was set (i.e. no `null.Int.Valid` BS...)
-    - the final consolidation result is a plain Go struct and a separate metadata layer allows users to reason about the config and answer the questions above
-    - custom types will only be needed for complex options (and the library will have nicely defined interfaces for supporting custom types)
-4. This needs to be composable, in all three dimensions:
-    - config values can be consolidated between multiple config layers (e.g. CLI flag overwrites env. var which overwrites JSON option, etc.)
-    - configs can be combined (e.g. if I have configs for `type A struct { ... }` and `type B struct { ...}`, this should also be easy to make into a valid config: `type C struct {A; B}`
-    - a config can contain another config as a property, i.e. you should be able to nest configs, and one config can be encapsulated in a single property of the other
-5. Everything is as type safe and compile-time-error-able as possible:
-    - static go types and interfaces >> type assertions >> reflection
-    - we won't use struct tags! type-safe methods/properties >>> struct tags
-6. Batteries built-in (e.g. support for JSON, env vars, CLI flags, basic data types), but completely extensible
-    - Supports validation, has to have user-friendly error messages (without Go implementation details)
-    - Supports warnings for things like deprecated variables
-7. An easy way to marshal the whole consolidated config, e.g. to a JSON file. Ideally, we should be able to specify whether we want only the changed values, or all of the values (incl. any default ones).
-8. Stretch goal: the metadata should be rich enough so that a whole application framework like cobra can be built on top of it, including generation of man pages and auto-completion
-9. We should only parse anything once
+The impetus for croconf was [k6](https://github.com/k6io/k6)'s very complicated configuration. We have a lot of options and most options have _at least_ 5 value sources: their default values, JSON config, exported `options` in the JS scripts, environment variables, CLI flag values. Some options have more... :sob:
 
-### Misc thoughts:
-- The building of the final config can be a multi-step process. For example, you may first need to understand which sub-command is going to be used (e.g. `k6 run`, `k6 cloud`, `k6 resume`, etc.), before you actually know _what_ config options are even possible.
-- At _some_ of the config building steps, we need to be able to check _some_ config sources for uknown/unused options. For example:
-    - at the first step when we're determining the sub-command, we don't care that there will be unknown CLI flags, we expect that
-    - at the next step, when we know the sub-command and all of its needed CLI flags and environment variables, an uknown CLI flag should be an error, but an unknown env var shouldn't be.
-    - an unknown JSON option might be an error in some places, but for compatibility reasons, a warning in others...
-- If the config objects are pointers, and config properties are values in the config structs but passed by pointers to the croconf functions, you have these pros and cons:
-    - pro: mostly have a very type safe API without reflection/type assertion
-    - pro: you can use the property pointers as keys in the "Has field `X` been changed?" questions
-    - con: some config user will be able to modify the config deep in the codebase
-    - pro/con: you can copy the config values by just copying the struct, but if you have nested structs by pointer or a `crocon.Manager` (if we stick with that), it will be a big problem...
-- Error reporting is tricky... we want it to be as user-friendly as possible, bit there are at least 3 distinct parts:
-    1. parsing errors, e.g. a completely invalid JSON/YAML/etc. file - we can't continue from this, we can only show as many details as possible
-    2. parsing and type errors for specific fields (e.g. trying to pass a string as an int) - ideally, we should be able to collect all of these errors from all of the sources (CLI, env vars, JSON, etc.) and show them in a single user-friendly list
-        - this is probably also the step where we can _sometimes_ complain that there are unknown options (e.g. `unknown CLI flag X` or `unknown JSON option Y`, if we know what all of the possible options/values can be at this step)
-    3. validation - this is tricky, it's the last step (i.e. we only validate the final consolidated values) and validation logic can spread between multiple fields (e.g. option `X` should be less than or equal to option `Y`)
+We currently use several Go config libraries and a lot of glue code to manage this, and it's still a frequent source of bugs and heavy technical debt. As far as we know, no single other existing Go configuration library is sufficient to cover all of our use cases well. And, from what we can see, these issues are only partially explained by Go's weak type system...
 
-### Proposed TODO:
-0. Figure out a usable Go API (e.g. with initial support for just a few Go types like `string`, `int64` and `bool` that satisfies the criteria :arrow_up: :sweat_smile:
-1. Write a PoC with some tests and mock real-life usage examples
-2. Iterate and expand on :arrow_up:
-3. Support all types (incl. custom types) and multiple sources
-4. Figure out an appropriate Go module structure
-5. Polish, set up GitHub Actions CI, etc.
-5. Profit
+So when we tried to find a Go config library that avoids all of these problems and couldn't, croconf was born! :tada:
 
+## Architecture
+
+> ### ⚠️ croconf is still in the "proof of concept" stage
+>
+> The library is not yet ready for production use. It has bugs, not all features are finished, comments and tests are spotty, and the module structure and type names are expected to change a lot in the coming weeks.
+
+In short, croconf shouldn't suffer from any of the issues :arrow_up:, hopefully without introducing any new ones! :sparkles: It should be suitable for any size of a Go project - from the simplest web service, to the most complicated CLI application.
+
+Some details about croconf's API design:
+- it uses type safe, uses plain old Go values for the config values
+- works for standalone values as well as `struct` properties
+- everything about a config field is defined in a single place, no `string` identifier has to ever be written more than once
+- after consolidating the config values, you can query which config source set a specific value
+- batteries included, while at the same time completely extensible:
+    - built-in frontends for all native Go types, incl. `encoding.TextUnmarshaler` and slices
+    - support for CLI flags, environment variables and JSON options (for now) with zero dependencies
+    - none of the built-in types are special, you can easily add custom value types and config sources by implementing a few of the small well-defined interfaces in [`types.go`](https://github.com/k6io/croconf/blob/main/types.go)
+- no `unsafe`
+- no `reflect` and no type assertions needed for user-facing code (both are used very sparingly internally in the library)
+
+These nice features and guarantees are achieved because of the type-safe lazy bindings between value destinations and source paths that croconf uses. The configuration definition just defines the source bindings for every value, the actual resolving is done as a second step.
+
+## Example
+
+```go
+
+// SimpleConfig is a normal Go struct with plain Go property types.
+type SimpleConfig struct {
+	RPPs int64
+	DNS  struct {
+		Server net.IP // type that implements encoding.TextUnmarshaler
+		// ... more nested fields
+	}
+	// ... more config fields...
+}
+
+// NewScriptConfig defines the sources and metadata for every config field.
+func NewScriptConfig(
+	cm *croconf.Manager, cliSource *croconf.SourceCLI,
+	envVarsSource *croconf.SourceEnvVars, jsonSource *croconf.SourceJSON,
+) *SimpleConfig {
+	conf := &SimpleConfig{}
+
+	cm.AddField(
+		croconf.NewInt64Field(
+			&conf.RPPs,
+			jsonSource.From("rps"),
+			envVarsSource.From("APP_RPS"),
+			cliSource.FromNameAndShorthand("rps", "r"),
+			// ... more bindings - every field can have as many or as few as needed
+		),
+		croconf.WithDescription("number of virtual users"),
+		croconf.IsRequired(),
+		// ... more field options like validators, meta-information, etc.
+	)
+
+	cm.AddField(
+		croconf.NewTextBasedField(
+			&conf.DNS.Server,
+			croconf.DefaultStringValue("8.8.8.8"),
+			jsonSource.From("dns").From("server"),
+			envVarsSource.From("APP_DNS_SERVER"),
+		),
+		croconf.WithDescription("server for DNS queries"),
+	)
+
+	// ... more fields
+
+	return conf
+}
+
+func main() {
+	configManager := croconf.NewManager()
+	// Manually create config sources - fully testable, no implicit shared globals!
+	cliSource := croconf.NewSourceFromCLIFlags(os.Args[1:])
+	envVarsSource := croconf.NewSourceFromEnv(os.Environ())
+	jsonSource := croconf.NewJSONSource(getJSONConfigContents())
+
+	config := NewScriptConfig(configManager, cliSource, envVarsSource, jsonSource)
+
+	if err := configManager.Consolidate(); err != nil {
+		log.Fatalf("error consolidating the config: %s", err)
+	}
+
+	jsonResult, err := json.MarshalIndent(config, "", "    ")
+	if err != nil {
+		log.Fatalf("error marshaling JSON: %s", err)
+	}
+	fmt.Fprint(os.Stdout, string(jsonResult))
+}
+```
+
+This was a relatively simple example taken from [here](https://github.com/k6io/croconf/blob/main/examples/croconf-simple-struct-example/main.go), and it still manages to combine 4 config value sources! For other examples, take a look in the [`examples` folder](https://github.com/k6io/croconf/tree/main/examples) in this repo.
+
+## Origins of name
+
+coconf comes from _croco_-dile _conf_-iguration. So, :crocodile: not :croatia: :smile: And in the tradition set by [k6](https://github.com/k6io/k6), if we don't like it, we might decide to abbreviate it to `c6` later... :sweat_smile:
+
+## Remaining tasks
+
+As mentioned above, this library is still in the proof-of-concept stage. These are some of the remaining tasks:
+- Refactor module structure and type names
+- More value sources (e.g. TOML, YAML, INI, etc.)
+- Add built-in support for all Go basic and common stdlib types and interfaces
+- Code comments and linter fixes
+- Fix bugs and write **a lot** more tests
+- Documentation and examples
+- Better (more user-friendly) error messages
+- An equivalent to [cobra](https://github.com/spf13/cobra)-like or [kong](https://github.com/alecthomas/kong), a wrapper for CLI application frameworks that is able to handle CLI sub-commands, shell autocompletion, etc.
+    - _ currently only toy PoC for this concept exists in [`examples/croconf-complex-example/`](https://github.com/k6io/croconf/tree/main/examples/croconf-complex-example)_
+- Add drop-in support for marshaling config structs (e.g. to JSON) with the same format they were unmarshaled from.
+- Be able to emit errors on unknown CLI flags, JSON options, etc.

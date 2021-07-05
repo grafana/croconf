@@ -258,6 +258,7 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 				sources.json.From("tinyArr"),
 				sources.env.From("TINY_ARR"),
 				sources.cli.FromName("tiny-arr"),
+				sources.gomap.From("tinyArr"),
 			)
 		},
 		testCases: []fieldTestCase{
@@ -266,11 +267,10 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 				json:          `{"tinyArr": [1, 2]}`,
 				expectedValue: []int8{1, 2},
 			},
-			// TODO: enable when impemented
-			// {
-			// 	gomap:         map[string]interface{}{"tinyArr": []int8{1, 2}},
-			// 	expectedValue: []int8{1, 2},
-			// },
+			{
+				gomap:         map[string]interface{}{"tinyArr": []int8{1, 2}},
+				expectedValue: []int8{1, 2},
+			},
 			{
 				json:          `{"tinyArr": [1, 1, 2]}`,
 				env:           []string{`TINY_ARR=3,5,8`},

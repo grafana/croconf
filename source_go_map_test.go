@@ -132,3 +132,36 @@ func TestGoMapBindFloatValue(t *testing.T) {
 		t.Error("BindFloatValueTo: unexpected error message:", err)
 	}
 }
+
+type person struct {
+	name string
+}
+
+func (p *person) UnmarshalText(txt []byte) error {
+	p.name = string(txt)
+	return nil
+}
+
+func TestGoMapBindTextBasedValueTo(t *testing.T) {
+	t.Parallel()
+
+	gomap := map[string]interface{}{"name": "Alice"}
+
+	source := NewGoMapSource(gomap)
+	name := source.From("name")
+
+	if err := source.Initialize(); err != nil {
+		t.Fatalf("received an unexpected init error %s", err)
+	}
+
+	var val person
+	valBinding := name.BindTextBasedValueTo(&val)
+	err := valBinding.Apply()
+	if err != nil {
+		t.Errorf("BindTextBasedValueTo error: %s", err)
+	}
+	if expected := "Alice"; val.name != expected {
+		t.Errorf("BindTextBasedValueTo: got %s, expected %s", val, expected)
+	}
+
+}

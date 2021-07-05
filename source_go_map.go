@@ -1,7 +1,9 @@
 package croconf
 
 import (
+	"encoding"
 	"fmt"
+	"reflect"
 )
 
 type SourceGoMap struct {
@@ -171,7 +173,7 @@ func (mb *gomapBinder) BindBoolValueTo(dest *bool) Binding {
 	return mb.newBinding(func() error {
 		raw, err := mb.lookup()
 		if err != nil {
-			return err
+			return NewBindFieldMissingError(mb.source.GetName(), mb.name)
 		}
 
 		v, ok := raw.(bool)
@@ -183,9 +185,59 @@ func (mb *gomapBinder) BindBoolValueTo(dest *bool) Binding {
 	})
 }
 
-// TODO: BindArrayValueTo
-// func (mb *gomapBinder) BindArrayValueTo(length *int, element *func(int) LazySingleValueBinder) Binding {
-// }
+func (mb *gomapBinder) BindTextBasedValueTo(dest encoding.TextUnmarshaler) Binding {
+	return mb.newBinding(func() error {
+		raw, err := mb.lookup()
+		if err != nil {
+			return err
+		}
+
+		var txt []byte
+		switch val := raw.(type) {
+		case string:
+			txt = []byte(val)
+		case []byte:
+			txt = val
+		}
+
+		if err := dest.UnmarshalText(txt); err != nil {
+			return NewBindValueError("BindTextBasedValueTo", fmt.Sprintf("%v", raw), fmt.Errorf("casting []byte failed"))
+		}
+
+		return nil
+	})
+}
+
+func (mb *gomapBinder) BindArrayValueTo(length *int, element *func(int) LazySingleValueBinder) Binding {
+	return mb.newBinding(func() error {
+		raw, err := mb.lookup()
+		if err != nil {
+			return NewBindFieldMissingError(mb.source.GetName(), mb.name)
+		}
+
+		// Check if interface{} is a slice
+		v := reflect.ValueOf(raw)
+		if v.Kind() != reflect.Slice {
+			return NewBindValueError("BindArrayValueTo", fmt.Sprintf("%v", raw), fmt.Errorf("casting slice failed"))
+		}
+
+		*length = v.Len()
+		*element = func(elNum int) LazySingleValueBinder {
+			name := fmt.Sprintf("%s[%d]", mb.name, elNum)
+			return &gomapBinder{
+				source: mb.source,
+				name:   name,
+				lookup: func() (interface{}, error) {
+					if elNum >= v.Len() {
+						return nil, fmt.Errorf("tried to access invalid element %s, array only has %d elements", name, elNum)
+					}
+					return v.Index(elNum).Interface(), nil
+				},
+			}
+		}
+		return nil
+	})
+}
 
 type gomapBinding struct {
 	binder *gomapBinder

@@ -6,6 +6,7 @@ import (
 )
 
 func TestSet_Option(t *testing.T) {
+	t.Parallel()
 	fs := Set{
 		flags: map[string]string{
 			"foo": "bar",
@@ -18,6 +19,7 @@ func TestSet_Option(t *testing.T) {
 }
 
 func TestSet_Positional(t *testing.T) {
+	t.Parallel()
 	fs := Set{
 		posArgs: []string{"run", "foo"},
 	}
@@ -33,7 +35,9 @@ func TestSet_Positional(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
+	t.Parallel()
 	t.Run("LongOption", func(t *testing.T) {
+		t.Parallel()
 		//{in: "--test=false", exp: []string{}},
 		//{in: "--test false", exp: []string{}},
 
@@ -57,6 +61,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("LongOptionWithSpace", func(t *testing.T) {
+		t.Parallel()
 		args := []string{"run", "--user", "u1", "--", "hello.go"}
 
 		p := NewParser()
@@ -77,6 +82,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("LongOptionWithUnary", func(t *testing.T) {
+		t.Parallel()
 		args := []string{"--bool", "foo"}
 
 		p := NewParser()
@@ -100,6 +106,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("LongOptionSlice", func(t *testing.T) {
+		t.Parallel()
 		args := []string{"--nums", "0", "alpha", "--nums=42"}
 
 		p := NewParser()
@@ -121,6 +128,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("ShortOption", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			in  []string
 			exp map[string]string
@@ -165,7 +173,6 @@ func TestParse(t *testing.T) {
 			if !reflect.DeepEqual(fs.flags, tt.exp) {
 				t.Errorf("unexpected flag %v %+v", tt.in, fs.flags)
 			}
-
 		}
 	})
 }

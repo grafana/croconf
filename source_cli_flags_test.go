@@ -3,6 +3,7 @@ package croconf
 import "testing"
 
 func TestCLIBinding_BindStringValueTo(t *testing.T) {
+	t.Parallel()
 	tests := map[string]struct {
 		args []string
 	}{
@@ -34,8 +35,8 @@ func TestCLIBinding_BindStringValueTo(t *testing.T) {
 			return
 		}
 
-		bindfn := field.BindBoolValueTo(&b)
-		err = bindfn()
+		binding := field.BindBoolValueTo(&b)
+		err = binding.Apply()
 		if err != nil {
 			t.Errorf("test: %s: got unexpected error: %v", name, err)
 			return

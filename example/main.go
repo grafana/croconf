@@ -41,7 +41,7 @@ func runCommand(
 ) {
 	jsonConfigContents, err := ioutil.ReadFile(globalConf.JSONConfigPath)
 	if err != nil {
-		if globalConf.cm.Field(&globalConf.JSONConfigPath).ValueSource() != nil {
+		if globalConf.cm.Field(&globalConf.JSONConfigPath).HasBeenSetFromSource() {
 			// If this was explicitly set, treat any failure to open it as a fatal error
 			log.Fatal(err)
 		}
@@ -83,14 +83,15 @@ func dumpField(cm *croconf.Manager, field interface{}, fieldName string) {
 	}
 
 	fieldMeta := cm.Field(field)
-	if source := fieldMeta.ValueSource(); source != nil {
+	if fieldMeta.HasBeenSetFromSource() {
+		binding := fieldMeta.LastBindingFromSource()
 		fmt.Printf(
-			"Field %s was manually set by source '%s' with value '%s'\n",
-			fieldName, source.GetName(), jsonResult,
+			"Field %s was manually set by source '%s' (field %s) with value '%s'\n",
+			fieldName, binding.Source().GetName(), binding.BoundName(), jsonResult,
 		)
 	} else {
 		fmt.Printf(
-			"Field %s was using the default value of '%s'\n",
+			"Field %s was using the default/non-source value of '%s'\n",
 			fieldName, jsonResult,
 		)
 	}

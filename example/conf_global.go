@@ -21,8 +21,6 @@ func NewGlobalConfig(
 	envVarsSource *croconf.SourceEnvVars,
 ) (*GlobalConfig, error) {
 	cm := croconf.NewManager()
-	cm.AddSource(envVarsSource)
-	cm.AddSource(cliSource)
 	conf := &GlobalConfig{cm: cm}
 
 	cm.AddField(

@@ -30,6 +30,8 @@ func (p *Parser) RegisterSlice(long, short string) {
 	}
 }
 
+// TODO: split apart and remove nolint
+//nolint: funlen,gocognit
 func (p *Parser) Parse(tt []string) (*Set, error) {
 	// TODO: refactor to remove this
 	args := make([]string, len(tt))
@@ -133,7 +135,6 @@ func (p *Parser) Parse(tt []string) (*Set, error) {
 		default:
 			fs.posArgs = append(fs.posArgs, arg)
 		}
-
 	}
 	return &fs, err
 }

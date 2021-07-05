@@ -3,72 +3,63 @@ package croconf
 import "encoding"
 
 type Field interface {
-	Consolidate() []error
-	ValueSource() Source // nil for default value
 	Destination() interface{}
+	Bindings() []Binding
 }
 
 type Source interface {
 	Initialize() error
-	// TODO: figure out what to put here? and if we even need this :/
-	GetName() string
+	GetName() string // TODO: remove?
 }
 
-type SourceGetter interface {
-	GetSource() Source
+type Binding interface {
+	Apply() error
 }
 
-type LazySingleValueBinding interface {
-	SourceGetter
-	StringValueBinding
-	IntValueBinding
-	UintValueBinding
-	FloatValueBinding
-	BoolValueBinding
-	TextBasedValueBinding
+type BindingFromSource interface {
+	Binding
+	Source() Source
+	BoundName() string
 }
 
-type ArrayBinding interface {
-	SourceGetter
-	BindArray() func() (Array, error)
+type LazySingleValueBinder interface {
+	StringValueBinder
+	IntValueBinder
+	UintValueBinder
+	FloatValueBinder
+	BoolValueBinder
+	TextBasedValueBinder
 }
 
-type Array interface { // TODO: rename to List and ListBinding?
-	Len() int
-	Element(int) LazySingleValueBinding
+type StringValueBinder interface {
+	BindStringValueTo(*string) Binding
 }
 
-type StringValueBinding interface {
-	SourceGetter
-	BindStringValueTo(dest *string) func() error
+type IntValueBinder interface {
+	BindIntValueTo(*int64) Binding
 }
 
-type IntValueBinding interface {
-	SourceGetter
-	BindIntValue() func(bitSize int) (int64, error)
+type UintValueBinder interface {
+	BindUintValueTo(*uint64) Binding
 }
 
-type UintValueBinding interface {
-	SourceGetter
-	BindUintValue() func(bitSize int) (uint64, error)
+type FloatValueBinder interface {
+	BindFloatValueTo(*float64) Binding
 }
 
-type FloatValueBinding interface {
-	SourceGetter
-	BindFloatValue() func(bitSize int) (float64, error)
+type BoolValueBinder interface {
+	BindBoolValueTo(dest *bool) Binding
 }
 
-type BoolValueBinding interface {
-	SourceGetter
-	BindBoolValueTo(dest *bool) func() error
+type TextBasedValueBinder interface {
+	BindTextBasedValueTo(dest encoding.TextUnmarshaler) Binding
 }
 
-type TextBasedValueBinding interface {
-	SourceGetter
-	BindTextBasedValueTo(dest encoding.TextUnmarshaler) func() error
+type CustomValueBinder interface {
+	BindValue() Binding
 }
 
-type CustomValueBinding interface {
-	SourceGetter
-	BindValue() func() error
+// TODO: rename to List or Slice instead of Array?
+type ArrayValueBinder interface {
+	BindArrayValueTo(length *int, element *func(int) LazySingleValueBinder) Binding
 }

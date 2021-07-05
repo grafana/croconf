@@ -198,10 +198,12 @@ func (mb *gomapBinder) BindTextBasedValueTo(dest encoding.TextUnmarshaler) Bindi
 			txt = []byte(val)
 		case []byte:
 			txt = val
+		default:
+			return NewBindValueError("BindTextBasedValueTo", fmt.Sprintf("%v", raw), fmt.Errorf("casting []byte or string failed"))
 		}
 
 		if err := dest.UnmarshalText(txt); err != nil {
-			return NewBindValueError("BindTextBasedValueTo", fmt.Sprintf("%v", raw), fmt.Errorf("casting []byte failed"))
+			return NewBindValueError("BindTextBasedValueTo", fmt.Sprintf("%v", raw), fmt.Errorf("UnmarshalText failed"))
 		}
 
 		return nil

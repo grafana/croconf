@@ -10,14 +10,17 @@ import (
 	"os"
 
 	"go.k6.io/croconf"
+	"go.k6.io/croconf/example/config"
 )
 
 func main() {
+	configManager := croconf.NewManager()
 	cliSource := croconf.NewSourceFromCLIFlags(os.Args[1:])
 	envVarsSource := croconf.NewSourceFromEnv(os.Environ())
 
-	globalConf, err := NewGlobalConfig(cliSource, envVarsSource)
-	if err != nil {
+	globalConf := config.NewGlobalConfig(configManager, cliSource, envVarsSource)
+
+	if err := configManager.Consolidate(); err != nil {
 		log.Fatal(err)
 	}
 
@@ -27,23 +30,22 @@ func main() {
 
 	// TODO: obviously something better
 	if globalConf.SubCommand == "run" {
-		runCommand(cliSource, envVarsSource, globalConf)
+		runCommand(configManager, globalConf, cliSource, envVarsSource)
 	} else if globalConf.ShowHelp {
-		fmt.Println(globalConf.cm.GetHelpText()) //nolint:forbidigo
+		fmt.Println(configManager.GetHelpText()) //nolint:forbidigo
 	} else {
-		log.Fatalf("unknown sub-command %s", globalConf.SubCommand)
+		log.Fatalf("unknown sub-command %s, see options with --help", globalConf.SubCommand)
 	}
 }
 
 //nolint:forbidigo
 func runCommand(
-	cliSource *croconf.SourceCLI,
-	envVarsSource *croconf.SourceEnvVars,
-	globalConf *GlobalConfig,
+	configManager *croconf.Manager, globalConf *config.GlobalConfig,
+	cliSource *croconf.SourceCLI, envVarsSource *croconf.SourceEnvVars,
 ) {
 	jsonConfigContents, err := ioutil.ReadFile(globalConf.JSONConfigPath)
 	if err != nil {
-		if globalConf.cm.Field(&globalConf.JSONConfigPath).HasBeenSetFromSource() {
+		if configManager.Field(&globalConf.JSONConfigPath).HasBeenSetFromSource() {
 			// If this was explicitly set, treat any failure to open it as a fatal error
 			log.Fatal(err)
 		}
@@ -53,15 +55,17 @@ func runCommand(
 		}
 	}
 	jsonSource := croconf.NewJSONSource(jsonConfigContents)
-	scriptConf, err := NewScriptConfig(globalConf, cliSource, envVarsSource, jsonSource)
-	if err != nil {
+	scriptConf := config.NewScriptConfig(configManager, globalConf, cliSource, envVarsSource, jsonSource)
+	if err := configManager.Consolidate(); err != nil {
 		log.Fatal(err)
 	}
 
 	if scriptConf.ShowHelp {
-		fmt.Println(scriptConf.cm.GetHelpText()) //nolint:forbidigo
+		fmt.Println(configManager.GetHelpText()) //nolint:forbidigo
 		return
 	}
+
+	// TODO error out if we see unknown CLI flags or JSON options
 
 	// And finally, we should be able to marshal and dump the consolidated config
 	jsonResult, err := json.MarshalIndent(scriptConf, "", "    ")
@@ -72,17 +76,18 @@ func runCommand(
 
 	fmt.Println()
 
-	dumpField(scriptConf.cm, &scriptConf.VUs, "VUs")
-	dumpField(scriptConf.cm, &scriptConf.Scenarios1, "Scenarios1")
-	dumpField(scriptConf.cm, &scriptConf.Scenarios2, "Scenarios2")
-	dumpField(scriptConf.cm, &scriptConf.DNS.TTL, "DNS.TTL")
-	dumpField(scriptConf.cm, &scriptConf.DNS.Server, "DNS.Server")
-	dumpField(scriptConf.cm, &scriptConf.TinyArr, "TinyArr")
-	dumpField(scriptConf.cm, &scriptConf.Throw, "Throw")
+	dumpField(configManager, &scriptConf.JSONConfigPath)
+	dumpField(configManager, &scriptConf.VUs)
+	dumpField(configManager, &scriptConf.Scenarios1)
+	dumpField(configManager, &scriptConf.Scenarios2)
+	dumpField(configManager, &scriptConf.DNS.TTL)
+	dumpField(configManager, &scriptConf.DNS.Server)
+	dumpField(configManager, &scriptConf.TinyArr)
+	dumpField(configManager, &scriptConf.Throw)
 }
 
 //nolint:forbidigo
-func dumpField(cm *croconf.Manager, field interface{}, fieldName string) {
+func dumpField(cm *croconf.Manager, field interface{}) {
 	// TODO: get the name from the field?
 	jsonResult, err := json.Marshal(field)
 	if err != nil {
@@ -94,12 +99,12 @@ func dumpField(cm *croconf.Manager, field interface{}, fieldName string) {
 		binding := fieldMeta.LastBindingFromSource()
 		fmt.Printf(
 			"Field %s was manually set by source '%s' (field %s) with value '%s'\n",
-			fieldName, binding.Source().GetName(), binding.BoundName(), jsonResult,
+			fieldMeta.Name, binding.Source().GetName(), binding.BoundName(), jsonResult,
 		)
 	} else {
 		fmt.Printf(
 			"Field %s was using the default/non-source value of '%s'\n",
-			fieldName, jsonResult,
+			fieldMeta.Name, jsonResult,
 		)
 	}
 }

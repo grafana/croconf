@@ -8,6 +8,7 @@ import (
 type ManagedField struct {
 	Field
 
+	wasConsolidated       bool
 	lastBindingFromSource BindingFromSource // nil for default value
 
 	Name        string
@@ -31,6 +32,9 @@ func (mf *ManagedField) ApplyDefault() error {
 }
 
 func (mf *ManagedField) Consolidate() []error {
+	if mf.wasConsolidated {
+		return nil
+	}
 	// TODO: verify that sources have been initialized
 	var errs []error
 	for _, binding := range mf.Field.Bindings() {
@@ -46,6 +50,7 @@ func (mf *ManagedField) Consolidate() []error {
 			errs = append(errs, err)
 		}
 	}
+	mf.wasConsolidated = true
 	return errs
 }
 

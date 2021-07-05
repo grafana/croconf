@@ -39,9 +39,6 @@ func NewScriptConfig(
 	jsonSource *croconf.SourceJSON,
 ) (*ScriptConfig, error) {
 	cm := croconf.NewManager()
-	cm.AddSource(jsonSource)
-	cm.AddSource(envVarsSource)
-	cm.AddSource(cliSource)
 	conf := &ScriptConfig{GlobalConfig: globalConf, cm: cm} // TODO: somehow save the sources in the struct as well?
 
 	cm.AddField(

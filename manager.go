@@ -8,6 +8,7 @@ import (
 
 type Manager struct {
 	sources      []Source
+	seenSources  map[Source]struct{}
 	fields       []*ManagedField
 	fieldsByDest map[interface{}]*ManagedField
 	// TODO: internal data structure for tracking things
@@ -17,6 +18,8 @@ func NewManager() *Manager {
 	return &Manager{
 		fields:       make([]*ManagedField, 0),
 		fieldsByDest: make(map[interface{}]*ManagedField),
+		sources:      make([]Source, 0),
+		seenSources:  make(map[Source]struct{}),
 	}
 }
 
@@ -43,11 +46,21 @@ func (m *Manager) AddField(field Field, options ...FieldOption) *ManagedField {
 	m.fields = append(m.fields, mf)
 	m.fieldsByDest[field.Destination()] = mf
 
+	m.addSources(field)
+
 	return mf
 }
 
-func (m *Manager) AddSource(source Source) {
-	m.sources = append(m.sources, source)
+func (m *Manager) addSources(field Field) {
+	for _, b := range field.Bindings() {
+		if fromSource, ok := b.(BindingFromSource); ok {
+			s := fromSource.Source()
+			if _, seen := m.seenSources[s]; s != nil && !seen {
+				m.seenSources[s] = struct{}{}
+				m.sources = append(m.sources, s)
+			}
+		}
+	}
 }
 
 func (m *Manager) Field(dest interface{}) *ManagedField {

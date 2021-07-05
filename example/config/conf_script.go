@@ -9,6 +9,7 @@ import (
 
 type ScriptConfig struct {
 	*GlobalConfig
+	// TODO: json.Marshaler
 
 	UserAgent string
 	VUs       int64
@@ -35,7 +36,11 @@ func NewScriptConfig( //nolint: funlen
 	cm *croconf.Manager, globalConf *GlobalConfig,
 	cliSource *croconf.SourceCLI, envVarsSource *croconf.SourceEnvVars, jsonSource *croconf.SourceJSON,
 ) *ScriptConfig {
-	conf := &ScriptConfig{GlobalConfig: globalConf}
+	conf := &ScriptConfig{
+		GlobalConfig: globalConf,
+		// TODO: implement something like this:
+		// Marshaler:    jsonSource.NewMarshaller(),
+	}
 
 	cm.AddField(
 		croconf.NewStringField(

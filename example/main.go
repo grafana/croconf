@@ -14,9 +14,11 @@ import (
 )
 
 func main() {
-	configManager := croconf.NewManager()
 	cliSource := croconf.NewSourceFromCLIFlags(os.Args[1:])
 	envVarsSource := croconf.NewSourceFromEnv(os.Environ())
+	configManager := croconf.NewManager(
+		croconf.WithDefaultSourceOfFieldNames(envVarsSource),
+	)
 
 	globalConf := config.NewGlobalConfig(configManager, cliSource, envVarsSource)
 

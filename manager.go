@@ -36,13 +36,13 @@ func (m *Manager) deriveFieldName(fieldIndex int) string {
 	field := m.fields[fieldIndex]
 	var firstCanonicalBinding, firstNonDefaultBinding BindingFromSource
 	for _, binding := range field.Bindings() {
-		if fromSource, ok := binding.(BindingFromSource); ok {
-			source := fromSource.Source()
-			if source != nil && firstCanonicalBinding == nil {
-				firstCanonicalBinding = fromSource
+		if bindingFromSource, ok := binding.(BindingFromSource); ok {
+			source := bindingFromSource.Source()
+			if source != nil && firstCanonicalBinding == nil && source == m.defaultSourceOfFieldNames {
+				firstCanonicalBinding = bindingFromSource
 			}
-			if source != nil && firstNonDefaultBinding == nil && source == m.defaultSourceOfFieldNames {
-				firstNonDefaultBinding = fromSource
+			if source != nil && firstNonDefaultBinding == nil {
+				firstNonDefaultBinding = bindingFromSource
 			}
 		}
 	}

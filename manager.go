@@ -11,23 +11,60 @@ type Manager struct {
 	seenSources  map[Source]struct{}
 	fields       []*ManagedField
 	fieldsByDest map[interface{}]*ManagedField
-	// TODO: internal data structure for tracking things
+
+	defaultSourceOfFieldNames Source
 }
 
-func NewManager() *Manager {
-	return &Manager{
+type ManagerOption func(*Manager)
+
+func NewManager(options ...ManagerOption) *Manager {
+	m := &Manager{
 		fields:       make([]*ManagedField, 0),
 		fieldsByDest: make(map[interface{}]*ManagedField),
 		sources:      make([]Source, 0),
 		seenSources:  make(map[Source]struct{}),
 	}
-}
 
-func (m *Manager) GetManager() *Manager {
+	for _, opt := range options {
+		opt(m)
+	}
+
 	return m
 }
 
-func (m *Manager) AddField(field Field, options ...FieldOption) *ManagedField {
+func (m *Manager) deriveFieldName(fieldIndex int) string {
+	field := m.fields[fieldIndex]
+	var firstCanonicalBinding, firstNonDefaultBinding BindingFromSource
+	for _, binding := range field.Bindings() {
+		if fromSource, ok := binding.(BindingFromSource); ok {
+			source := fromSource.Source()
+			if source != nil && firstCanonicalBinding == nil {
+				firstCanonicalBinding = fromSource
+			}
+			if source != nil && firstNonDefaultBinding == nil && source == m.defaultSourceOfFieldNames {
+				firstNonDefaultBinding = fromSource
+			}
+		}
+	}
+
+	if firstCanonicalBinding != nil {
+		return firstCanonicalBinding.BoundName()
+	}
+
+	if firstNonDefaultBinding != nil {
+		return firstNonDefaultBinding.BoundName()
+	}
+
+	// TODO: some better fallback? for example, a way to get field names from
+	// the config struct that is being managed, through reflect. See
+	// https://golang.org/pkg/reflect/#Value.NumField and
+	// https://golang.org/pkg/reflect/#Value.Field. Something like this:
+	//
+	// func WithFieldNamesFromGoStruct(config interface{}) ManagerOption {}
+	return fmt.Sprintf("field-%d", fieldIndex)
+}
+
+func (m *Manager) AddField(field Field, options ...ManagedFieldOption) *ManagedField {
 	mf := &ManagedField{
 		Field: field,
 	}
@@ -36,17 +73,14 @@ func (m *Manager) AddField(field Field, options ...FieldOption) *ManagedField {
 		opt(mf)
 	}
 
-	if mf.Name == "" {
-		// TODO: add a way to designate a specific source as the canonical
-		// source of field names, e.g. so that all validation errors contain the
-		// JSON or CLI flag names
-		mf.Name = fmt.Sprintf("field-%d", len(m.fields)+1)
-	}
-
 	m.fields = append(m.fields, mf)
 	m.fieldsByDest[field.Destination()] = mf
 
-	m.addSources(field)
+	m.addSources(mf)
+
+	if mf.Name == "" {
+		mf.Name = m.deriveFieldName(len(m.fields) - 1)
+	}
 
 	return mf
 }
@@ -99,6 +133,26 @@ func (m *Manager) Consolidate() error {
 	return consolidateErrorMessage(errs, "Validation errors: ")
 }
 
+// TODO: move this outide to the CLI framework? also, make it
+// customizable/templateable
+func (m *Manager) GetHelpText() string {
+	var sb strings.Builder
+	for _, field := range m.fields {
+		fmt.Fprintf(&sb, "Field '%s' (%s):\n", field.Name, field.Description)
+
+		for _, b := range field.Bindings() {
+			if fromSource, ok := b.(BindingFromSource); ok && fromSource.Source() != nil {
+				fmt.Fprintf(
+					&sb, "\tFrom %s: %s\n",
+					fromSource.Source().GetName(), fromSource.BoundName(),
+				)
+			}
+		}
+	}
+
+	return sb.String()
+}
+
 func consolidateErrorMessage(errList []error, title string) error {
 	if len(errList) == 0 {
 		return nil
@@ -110,4 +164,13 @@ func consolidateErrorMessage(errList []error, title string) error {
 	}
 
 	return errors.New(strings.Join(errMsgParts, "\n"))
+}
+
+// WithDefaultSourceOfFieldNames designates a specific Source as the canonical
+// source of field names. For example, that way all validation errors and help
+// texts will always use the JSON property names or the CLI flag names.
+func WithDefaultSourceOfFieldNames(source Source) ManagerOption {
+	return func(m *Manager) {
+		m.defaultSourceOfFieldNames = source
+	}
 }

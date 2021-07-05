@@ -28,6 +28,8 @@ func main() {
 	// TODO: obviously something better
 	if globalConf.SubCommand == "run" {
 		runCommand(cliSource, envVarsSource, globalConf)
+	} else if globalConf.ShowHelp {
+		fmt.Println(globalConf.cm.GetHelpText()) //nolint:forbidigo
 	} else {
 		log.Fatalf("unknown sub-command %s", globalConf.SubCommand)
 	}
@@ -54,6 +56,11 @@ func runCommand(
 	scriptConf, err := NewScriptConfig(globalConf, cliSource, envVarsSource, jsonSource)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if scriptConf.ShowHelp {
+		fmt.Println(scriptConf.cm.GetHelpText()) //nolint:forbidigo
+		return
 	}
 
 	// And finally, we should be able to marshal and dump the consolidated config

@@ -68,27 +68,27 @@ func (mf *ManagedField) Validate() error {
 	return nil
 }
 
-type FieldOption func(*ManagedField)
+type ManagedFieldOption func(*ManagedField)
 
-func WithName(name string) FieldOption {
+func WithName(name string) ManagedFieldOption {
 	return func(mfield *ManagedField) {
 		mfield.Name = name
 	}
 }
 
-func WithDescription(description string) FieldOption {
+func WithDescription(description string) ManagedFieldOption {
 	return func(mfield *ManagedField) {
 		mfield.Description = description
 	}
 }
 
-func WithValidator(validator func() error) FieldOption {
+func WithValidator(validator func() error) ManagedFieldOption {
 	return func(mfield *ManagedField) {
 		mfield.Validator = validator
 	}
 }
 
-func IsRequired() FieldOption {
+func IsRequired() ManagedFieldOption {
 	return func(mfield *ManagedField) {
 		mfield.Required = true
 	}

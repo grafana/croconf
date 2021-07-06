@@ -3,7 +3,7 @@
 
 ## Why?
 
-We know that there are plenty of [other Go configuration](https://github.com/avelino/awesome-go#configuration) and [CLI libraries](https://github.com/avelino/awesome-go#standard-cli) out there already - _insert [obligatory xkcd](https://github.com/avelino/awesome-go#standard-cli)_... :sweat_smile:  Unfortunately, most (all?) of them suffer from **at least** one of these serious issues and limitations:
+We know that there are plenty of [other Go configuration](https://github.com/avelino/awesome-go#configuration) and [CLI libraries](https://github.com/avelino/awesome-go#standard-cli) out there already - _insert [obligatory xkcd](https://xkcd.com/927/)_... :sweat_smile:  Unfortunately, most (all?) of them suffer from **at least** one of these serious issues and limitations:
 1. Difficult to test:
     - e.g. they rely directly on `os.Args()` or `os.Environ()` or some other shared global state
     - can't check what results various inputs will produce without a lot of effort for managing that state
@@ -137,7 +137,7 @@ As mentioned above, this library is still in the proof-of-concept stage. It is u
 - Fix bugs and write **a lot** more tests
 - Documentation and examples
 - Better (more user-friendly) error messages
-- An equivalent to [cobra](https://github.com/spf13/cobra)-like or [kong](https://github.com/alecthomas/kong), a wrapper for CLI application frameworks that is able to handle CLI sub-commands, shell autocompletion, etc.
+- An equivalent to [cobra](https://github.com/spf13/cobra) or [kong](https://github.com/alecthomas/kong), a wrapper for CLI application frameworks that is able to handle CLI sub-commands, shell autocompletion, etc.
     - _currently only toy PoC for this concept exists in [`examples/croconf-complex-example/`](https://github.com/k6io/croconf/tree/main/examples/croconf-complex-example)_
 - Add drop-in support for marshaling config structs (e.g. to JSON) with the same format they were unmarshaled from.
 - Be able to emit errors on unknown CLI flags, JSON options, etc.

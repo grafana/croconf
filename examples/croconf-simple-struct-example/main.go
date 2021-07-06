@@ -38,7 +38,7 @@ func NewScriptConfig(
 			cliSource.FromNameAndShorthand("rps", "r"),
 			// ... more bindings - every field can have as many or as few as needed
 		),
-		croconf.WithDescription("number of virtual users"),
+		croconf.WithDescription("requests per second"),
 		croconf.IsRequired(),
 		// ... more field options like validators, meta-information, etc.
 	)
@@ -71,6 +71,10 @@ func main() {
 		log.Fatalf("error consolidating the config: %s", err)
 	}
 
+	printConfig(config) // TODO: something more useful
+}
+
+func printConfig(config *SimpleConfig) {
 	jsonResult, err := json.MarshalIndent(config, "", "    ")
 	if err != nil {
 		log.Fatalf("error marshaling JSON: %s", err)

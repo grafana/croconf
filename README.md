@@ -23,6 +23,8 @@ We know that there are plenty of [other Go configuration](https://github.com/ave
 5. Too `string`-y:
     - you have to specify string IDs (e.g. CLI flag names, environment variable names, etc.) multiple times
     - a typo in only some of these these strings might go unnoticed for a long while or cause a panic
+6. Terrible error messages:
+	- users of a Go application don’t need to know Go implementation details like `strconv.ParseInt` or
 
 The impetus for croconf was [k6](https://github.com/k6io/k6)'s very complicated configuration. We have a lot of options and most options have _at least_ 5 hierarchical value sources: their default values, JSON config, exported `options` in the JS scripts, environment variables, and CLI flag values. Some options have more... :sob:
 
@@ -36,10 +38,10 @@ So when we tried to find a Go config library that avoids all of these problems a
 >
 > The library is not yet ready for production use. It has bugs, not all features are finished, comments and tests are spotty, and the module structure and type names are expected to change a lot in the coming weeks.
 
-In short, croconf shouldn't suffer from any of the issues :arrow_up:, hopefully without introducing any new ones! :fingers_crossed: It should be suitable for any size of a Go project - from the simplest toy project, to the most complicated CLI application and everything in-between!
+In short, croconf shouldn't suffer from any of the issues :arrow_up:, hopefully without introducing any new ones! :crossed_fingers: It should be suitable for any size of a Go project - from the simplest toy project, to the most complicated CLI application and everything in-between!
 
 Some details about croconf's API design
-- it uses type safe, uses plain old Go values for the config values
+- it uses type safe, plain old Go values for the config values
 - works for standalone values as well as `struct` properties
 - everything about a config field is defined in a single place, no `string` identifier has to ever be written more than once
 - after consolidating the config values, you can query which config source was responsible for setting a specific value (or if the default value was set)

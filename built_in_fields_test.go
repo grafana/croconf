@@ -14,15 +14,17 @@ type testCaseGroup struct {
 }
 
 type testSources struct {
-	json *SourceJSON
-	env  *SourceEnvVars
-	cli  *SourceCLI
+	json  *SourceJSON
+	env   *SourceEnvVars
+	cli   *SourceCLI
+	gomap *SourceGoMap
 }
 
 type fieldTestCase struct {
 	json           string
 	env            []string
 	cli            []string
+	gomap          map[string]interface{}
 	expectedValue  interface{}
 	expectedErrors []string
 }
@@ -38,6 +40,7 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 				sources.json.From("vus"),
 				sources.env.From("K6_VUS"),
 				sources.cli.FromNameAndShorthand("vus", "u"),
+				sources.gomap.From("vus"),
 			)
 		},
 		testCases: []fieldTestCase{
@@ -50,7 +53,16 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 				expectedErrors: []string{`BindIntValue: parsing "\"foo\"": invalid syntax`},
 			},
 			{
+				gomap: map[string]interface{}{"vus": "foo"},
+				// TODO: improve this error message, something like `"foo" is not a valid integer value` would be much better
+				expectedErrors: []string{`BindIntValueTo: parsing "foo": casting any int* type failed`},
+			},
+			{
 				json:          `{"vus": 2}`,
+				expectedValue: int64(2),
+			},
+			{
+				gomap:         map[string]interface{}{"vus": int64(2)},
 				expectedValue: int64(2),
 			},
 			{
@@ -88,6 +100,7 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 				sources.json.From("fieldName"),
 				sources.env.From("FIELD_NAME"),
 				sources.cli.FromNameAndShorthand("field-name", "f"),
+				sources.gomap.From("fieldName"),
 			)
 		},
 		testCases: []fieldTestCase{
@@ -96,6 +109,10 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 			},
 			{
 				json:          `{"fieldName": "foo"}`,
+				expectedValue: "foo",
+			},
+			{
+				gomap:         map[string]interface{}{"fieldName": "foo"},
 				expectedValue: "foo",
 			},
 			// TODO: add more test cases for this field
@@ -126,6 +143,7 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 				sources.json.From("tiny"),
 				sources.env.From("K6_TINY"),
 				sources.cli.FromName("tiny"),
+				sources.gomap.From("tiny"),
 			)
 		},
 		testCases: []fieldTestCase{
@@ -134,6 +152,10 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 			},
 			{
 				json:          `{"tiny": -128}`,
+				expectedValue: int8(-128),
+			},
+			{
+				gomap:         map[string]interface{}{"tiny": int8(-128)},
 				expectedValue: int8(-128),
 			},
 			{
@@ -152,6 +174,7 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 				sources.json.From("throw"),
 				sources.env.From("K6_THROW"),
 				sources.cli.FromName("throw"),
+				sources.gomap.From("throw"),
 			)
 		},
 		testCases: []fieldTestCase{
@@ -160,6 +183,10 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 			},
 			{
 				json:          `{"throw": false}`,
+				expectedValue: false,
+			},
+			{
+				gomap:         map[string]interface{}{"throw": false},
 				expectedValue: false,
 			},
 			{
@@ -231,12 +258,17 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 				sources.json.From("tinyArr"),
 				sources.env.From("TINY_ARR"),
 				sources.cli.FromName("tiny-arr"),
+				sources.gomap.From("tinyArr"),
 			)
 		},
 		testCases: []fieldTestCase{
 			// TODO: test defaults and null values
 			{
 				json:          `{"tinyArr": [1, 2]}`,
+				expectedValue: []int8{1, 2},
+			},
+			{
+				gomap:         map[string]interface{}{"tinyArr": []int8{1, 2}},
 				expectedValue: []int8{1, 2},
 			},
 			{
@@ -303,11 +335,16 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 			return NewStringField(
 				&dest,
 				sources.json.From("parent").From("child"),
+				sources.gomap.From("parent").From("child"),
 			)
 		},
 		testCases: []fieldTestCase{
 			{
 				json:          `{"parent": {"child": "data"}}`,
+				expectedValue: "data",
+			},
+			{
+				gomap:         map[string]interface{}{"parent": map[string]interface{}{"child": "data"}},
 				expectedValue: "data",
 			},
 			// TODO: add more test cases for this field?
@@ -319,14 +356,15 @@ var testCaseGroups = []testCaseGroup{ //nolint:gochecknoglobals
 func runTestCase(t *testing.T, tcg testCaseGroup, tc fieldTestCase) {
 	// TODO: actually test source failures as well?
 	sources := testSources{
-		json: NewJSONSource([]byte(tc.json)),
-		env:  NewSourceFromEnv(tc.env),
-		cli:  NewSourceFromCLIFlags(tc.cli),
+		json:  NewJSONSource([]byte(tc.json)),
+		env:   NewSourceFromEnv(tc.env),
+		cli:   NewSourceFromCLIFlags(tc.cli),
+		gomap: NewGoMapSource(tc.gomap),
 	}
 
 	field := tcg.field(sources)
 
-	for _, s := range []Source{sources.json, sources.env, sources.cli} {
+	for _, s := range []Source{sources.json, sources.env, sources.cli, sources.gomap} {
 		if err := s.Initialize(); err != nil {
 			t.Fatalf("unexpected error when initializing %s source: %s", s.GetName(), err)
 		}

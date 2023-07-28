@@ -6,23 +6,61 @@ import (
 	"reflect"
 )
 
-type ManagedField struct {
-	Field
+//TODO: call this TypedField and cut it in half, have a separate and simpler
+//Field interface and a ManagedField struct that can wrap either? :/
 
-	wasConsolidated       bool
-	lastBindingFromSource BindingFromSource // nil for default value
+type ManagedField[T any] struct {
+	destination  *T
+	defaultValue T
+	bindings     []TypedBinding[T]
+	validators   []func(T) error
 
-	Name         string
-	DefaultValue string
-	Description  string
-	Required     bool
-	Validator    func() error
+	// TODO: add validation and source strategies (e.g. validate every value
+	// from every source, not just the final one)
+
+	// TODO: split some of these in a separate non-generic struct?
+
 	// TODO: other meta information? e.g. deprecation warnings, usage
 	// information and examples, possible values, annotations, etc.
+	name        string
+	description string
+	required    bool
 }
 
-func (mf *ManagedField) getCurrentValueAsString() string {
-	dest := mf.Destination()
+type ConsolidatedManagedField[T any] struct {
+	mf          *ManagedField[T]
+	lastBinding TypedBinding[T]
+}
+
+func NewField[T any](dest *T) *ManagedField[T] {
+	return &ManagedField[T]{destination: dest}
+}
+
+var _ Field = &ManagedField[any]{}
+var _ ConsolidatedField = &ConsolidatedManagedField[any]{}
+
+func (mf *ManagedField[T]) WithDefault(val T) *ManagedField[T] {
+	mf.defaultValue = val
+	return mf
+}
+
+func (mf *ManagedField[T]) WithBinding(source TypedBinding[T]) *ManagedField[T] {
+	mf.bindings = append(mf.bindings, source)
+	return mf
+}
+
+func (mf *ManagedField[T]) WithValidator(validator func(T) error) *ManagedField[T] {
+	mf.validators = append(mf.validators, validator)
+	return mf
+}
+
+func (mf *ManagedField[T]) WithName(name string) *ManagedField[T] {
+	mf.name = name
+	return mf
+}
+
+func (mf *ManagedField[T]) getCurrentValueAsString() string {
+	dest := any(mf.destination)
 	if stringer, ok := dest.(fmt.Stringer); ok {
 		return stringer.String()
 	}
@@ -40,26 +78,32 @@ func (mf *ManagedField) getCurrentValueAsString() string {
 	return fmt.Sprintf("%v", value)
 }
 
-func (mf *ManagedField) Consolidate() []error {
-	if mf.wasConsolidated {
-		return nil
+func (mf *ManagedField[T]) Destination() any {
+	return mf.destination
+}
+
+func (mf *ManagedField[T]) Name() string {
+	return mf.name
+}
+
+func (mf *ManagedField[T]) Bindings() []Binding {
+	res := make([]Binding, len(mf.bindings))
+	for i, b := range mf.bindings {
+		res[i] = b
 	}
+	return res
+}
+
+func (mf *ManagedField[T]) Consolidate() (ConsolidatedField, error) {
 	// TODO: verify that sources have been initialized
 
-	mf.DefaultValue = mf.getCurrentValueAsString()
-
+	cf := &ConsolidatedManagedField[T]{mf: mf}
 	var errs []error
-	for _, binding := range mf.Field.Bindings() {
-		err := binding.Apply()
+	for _, binding := range mf.bindings {
+		val, err := binding.GetValue()
 		if err == nil {
-			if fromSource, ok := binding.(BindingFromSource); ok {
-				mf.lastBindingFromSource = fromSource
-
-				if fromSource.Source() == nil {
-					// This was a default value
-					mf.DefaultValue = mf.getCurrentValueAsString()
-				}
-			}
+			*mf.destination = val
+			cf.lastBinding = binding
 			continue
 		}
 		var bindErr *BindFieldMissingError
@@ -67,51 +111,28 @@ func (mf *ManagedField) Consolidate() []error {
 			errs = append(errs, err)
 		}
 	}
-	mf.wasConsolidated = true
-	return errs
+	return cf, errors.Join(errs...) // TODO: use a custom type
 }
 
-func (mf *ManagedField) LastBindingFromSource() BindingFromSource {
-	return mf.lastBindingFromSource
+func (cf *ConsolidatedManagedField[T]) HasBeenSet() bool {
+	return cf.lastBinding != nil
 }
 
-func (mf *ManagedField) HasBeenSetFromSource() bool {
-	return mf.lastBindingFromSource != nil && mf.lastBindingFromSource.Source() != nil
+func (cf *ConsolidatedManagedField[T]) Source() Source {
+	if cf.lastBinding == nil {
+		return nil
+	}
+	return cf.lastBinding.Source()
 }
 
-func (mf *ManagedField) Validate() error {
-	if mf.Required && !mf.HasBeenSetFromSource() {
-		return fmt.Errorf("Field %s is required, but no value was set", mf.Name)
+func (cf *ConsolidatedManagedField[T]) Validate() error {
+	if cf.mf.required && !cf.HasBeenSet() {
+		return fmt.Errorf("Field %s is required, but no value was set", cf.mf.name)
 	}
 
-	if mf.Validator != nil {
-		return mf.Validator()
+	var errs []error
+	for _, validator := range cf.mf.validators {
+		errs = append(errs, validator(*cf.mf.destination))
 	}
-	return nil
-}
-
-type ManagedFieldOption func(*ManagedField)
-
-func WithName(name string) ManagedFieldOption {
-	return func(mfield *ManagedField) {
-		mfield.Name = name
-	}
-}
-
-func WithDescription(description string) ManagedFieldOption {
-	return func(mfield *ManagedField) {
-		mfield.Description = description
-	}
-}
-
-func WithValidator(validator func() error) ManagedFieldOption {
-	return func(mfield *ManagedField) {
-		mfield.Validator = validator
-	}
-}
-
-func IsRequired() ManagedFieldOption {
-	return func(mfield *ManagedField) {
-		mfield.Required = true
-	}
+	return errors.Join(errs...) // TODO: use a custom type
 }

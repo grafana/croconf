@@ -1,65 +1,30 @@
 package croconf
 
-import "encoding"
+type Binding interface {
+	Source() Source
+	Identifier() string
+}
 
-type Field interface {
-	Destination() interface{}
-	Bindings() []Binding
+type TypedBinding[T any] interface {
+	Binding
+	GetValue() (T, error)
 }
 
 type Source interface {
-	Initialize() error
-	GetName() string // TODO: remove?
+	Initialize() error // TODO: figure out a better 2-step mechanism?
+	GetName() string   // TODO: remove?
 }
 
-type Binding interface {
-	Apply() error
+// TODO: are these even necessary?
+type Field interface {
+	Destination() interface{}
+	Name() string
+	Bindings() []Binding
+	Consolidate() (ConsolidatedField, error)
 }
 
-type BindingFromSource interface {
-	Binding
+type ConsolidatedField interface {
+	HasBeenSet() bool
 	Source() Source
-	BoundName() string
-}
-
-type LazySingleValueBinder interface {
-	StringValueBinder
-	IntValueBinder
-	UintValueBinder
-	FloatValueBinder
-	BoolValueBinder
-	TextBasedValueBinder
-}
-
-type StringValueBinder interface {
-	BindStringValueTo(*string) Binding
-}
-
-type IntValueBinder interface {
-	BindIntValueTo(*int64) Binding
-}
-
-type UintValueBinder interface {
-	BindUintValueTo(*uint64) Binding
-}
-
-type FloatValueBinder interface {
-	BindFloatValueTo(*float64) Binding
-}
-
-type BoolValueBinder interface {
-	BindBoolValueTo(dest *bool) Binding
-}
-
-type TextBasedValueBinder interface {
-	BindTextBasedValueTo(dest encoding.TextUnmarshaler) Binding
-}
-
-type CustomValueBinder interface {
-	BindValue() Binding
-}
-
-// TODO: rename to List or Slice instead of Array?
-type ArrayValueBinder interface {
-	BindArrayValueTo(length *int, element *func(int) LazySingleValueBinder) Binding
+	Validate() error // TODO: make this part of consolidation?
 }

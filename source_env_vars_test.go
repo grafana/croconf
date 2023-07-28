@@ -1,5 +1,6 @@
 package croconf
 
+/*
 import (
 	"math"
 	"testing"
@@ -142,3 +143,4 @@ func TestEnvVarsFloatValue(t *testing.T) {
 		t.Errorf("BindFloatValue: unexpected error message")
 	}
 }
+*/

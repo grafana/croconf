@@ -1,9 +1,7 @@
 package croconf
 
 import (
-	"encoding"
 	"encoding/json"
-	"fmt"
 )
 
 // TODO: use json.Decoder for this? json.Unmarshal() is a bit too magical
@@ -43,13 +41,6 @@ func (sj *SourceJSON) GetName() string {
 func (sj *SourceJSON) Lookup(name string) (json.RawMessage, bool) {
 	res, ok := sj.fields[name]
 	return res, ok
-}
-
-func (jb *jsonBinder) newBinding(apply func() error) *jsonBinding {
-	return &jsonBinding{
-		binder: jb,
-		apply:  apply,
-	}
 }
 
 func (sj *SourceJSON) From(name string) *jsonBinder {
@@ -98,76 +89,44 @@ func (jb *jsonBinder) From(name string) *jsonBinder {
 	}
 }
 
-func (jb *jsonBinder) BindStringValueTo(dest *string) Binding {
-	return jb.newBinding(func() error {
-		raw, err := jb.lookup()
+func toTypedJSONBinding[T any](jb *jsonBinder) TypedBinding[T] {
+	conv := func() (T, error) {
+		var result T
+		val, err := jb.lookup()
 		if err != nil {
-			return err
+			return result, err
 		}
 
-		return json.Unmarshal(raw, dest) // TODO: less reflection, better error messages
-	})
+		// TODO: use something else, incl. custom functions for common types, to
+		// have less reflection and better error messages
+		err = json.Unmarshal(val, &result)
+		return result, err
+	}
+
+	return ToBinding(jb.name, jb.source, conv)
 }
 
-func (jb *jsonBinder) BindIntValueTo(dest *int64) Binding {
-	return jb.newBinding(func() error {
-		raw, err := jb.lookup()
-		if err != nil {
-			// TODO: we might want to integrate custom error into lookup() method
-			return NewBindFieldMissingError(jb.source.GetName(), jb.name)
-		}
-		intVal, bindErr := parseInt(string(raw))
-		if bindErr != nil {
-			return bindErr.withFuncName("BindIntValue")
-		}
-		*dest = intVal
-		return nil
-	})
+func (jb *jsonBinder) ToString() TypedBinding[string] {
+	return toTypedJSONBinding[string](jb)
 }
 
-func (jb *jsonBinder) BindUintValueTo(dest *uint64) Binding {
-	return jb.newBinding(func() error {
-		raw, err := jb.lookup()
-		if err != nil {
-			// TODO: we might want to integrate custom error into lookup() method
-			return NewBindFieldMissingError(jb.source.GetName(), jb.name)
-		}
-		uintVal, bindErr := parseUint(string(raw))
-		if bindErr != nil {
-			return bindErr.withFuncName("BindIntValue")
-		}
-		*dest = uintVal
-		return nil
-	})
+func (jb *jsonBinder) ToInt64() TypedBinding[int64] {
+	return toTypedJSONBinding[int64](jb)
 }
 
-func (jb *jsonBinder) BindFloatValueTo(dest *float64) Binding {
-	return jb.newBinding(func() error {
-		raw, err := jb.lookup()
-		if err != nil {
-			// TODO: we might want to integrate custom error into lookup() method
-			return NewBindFieldMissingError(jb.source.GetName(), jb.name)
-		}
-		floatVal, bindErr := parseFloat(string(raw))
-		if bindErr != nil {
-			return bindErr.withFuncName("BindIntValue")
-		}
-		*dest = floatVal
-		return nil
-	})
+func (jb *jsonBinder) ToUint64() TypedBinding[uint64] {
+	return toTypedJSONBinding[uint64](jb)
 }
 
-func (jb *jsonBinder) BindBoolValueTo(dest *bool) Binding {
-	return jb.newBinding(func() error {
-		raw, err := jb.lookup()
-		if err != nil {
-			return err
-		}
-
-		return json.Unmarshal(raw, dest) // TODO: less reflection, better error messages
-	})
+func (jb *jsonBinder) ToFloat64() TypedBinding[float64] {
+	return toTypedJSONBinding[float64](jb)
 }
 
+func (jb *jsonBinder) ToBool() TypedBinding[bool] {
+	return toTypedJSONBinding[bool](jb)
+}
+
+/*
 func (jb *jsonBinder) BindTextBasedValueTo(dest encoding.TextUnmarshaler) Binding {
 	return jb.newBinding(func() error {
 		raw, err := jb.lookup()
@@ -188,26 +147,6 @@ func (jb *jsonBinder) BindTextBasedValueTo(dest encoding.TextUnmarshaler) Bindin
 		}
 
 		return dest.UnmarshalText(raw[1 : rawLen-1])
-	})
-}
-
-func (jb *jsonBinder) To(dest json.Unmarshaler) *jsonBinderWithDest {
-	return &jsonBinderWithDest{jsonBinder: jb, dest: dest}
-}
-
-type jsonBinderWithDest struct {
-	*jsonBinder
-	dest json.Unmarshaler
-}
-
-func (jbd *jsonBinderWithDest) BindValue() Binding {
-	return jbd.newBinding(func() error {
-		raw, err := jbd.lookup()
-		if err != nil {
-			return err
-		}
-
-		return jbd.dest.UnmarshalJSON(raw)
 	})
 }
 
@@ -240,25 +179,4 @@ func (jb *jsonBinder) BindArrayValueTo(length *int, element *func(int) LazySingl
 		return nil
 	})
 }
-
-type jsonBinding struct {
-	binder *jsonBinder
-	apply  func() error
-}
-
-var _ interface {
-	Binding
-	BindingFromSource
-} = &jsonBinding{}
-
-func (jb *jsonBinding) Apply() error {
-	return jb.apply()
-}
-
-func (jb *jsonBinding) Source() Source {
-	return jb.binder.source
-}
-
-func (jb *jsonBinding) BoundName() string {
-	return jb.binder.name
-}
+*/

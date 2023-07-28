@@ -1,8 +1,6 @@
 package croconf
 
 import (
-	"encoding"
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -49,87 +47,73 @@ type envBinder struct {
 	lookup func() (string, error)
 }
 
-func (eb *envBinder) newBinding(apply func() error) *envBinding {
-	return &envBinding{
-		binder: eb,
-		apply:  apply,
-	}
-}
-
-func (eb *envBinder) BindStringValueTo(dest *string) Binding {
-	return eb.newBinding(func() error {
+func (eb *envBinder) ToString() TypedBinding[string] {
+	return ToBinding(eb.name, eb.source, func() (string, error) {
 		val, err := eb.lookup()
 		if err != nil {
-			return err
+			return "", err
 		}
-		*dest = val
-		return nil
+		return val, nil
 	})
 }
 
-func (eb *envBinder) BindIntValueTo(dest *int64) Binding {
-	return eb.newBinding(func() error {
+func (eb *envBinder) ToInt64() TypedBinding[int64] {
+	return ToBinding(eb.name, eb.source, func() (int64, error) {
 		val, err := eb.lookup()
 		if err != nil {
-			// TODO: we might want to integrate custom error into lookup() method
-			return NewBindFieldMissingError(eb.source.GetName(), eb.name)
+			return 0, NewBindFieldMissingError(eb.source.GetName(), eb.name)
 		}
-		intVal, bindErr := parseInt(val)
+		parsedVal, bindErr := parseInt(val)
 		if bindErr != nil {
-			return bindErr.withFuncName("BindIntValue")
+			return 0, bindErr.withFuncName("ToInt64")
 		}
-		*dest = intVal
-		return nil
+		return parsedVal, nil
 	})
 }
 
-func (eb *envBinder) BindUintValueTo(dest *uint64) Binding {
-	return eb.newBinding(func() error {
+func (eb *envBinder) ToUint64() TypedBinding[uint64] {
+	return ToBinding(eb.name, eb.source, func() (uint64, error) {
 		val, err := eb.lookup()
 		if err != nil {
-			// TODO: we might want to integrate custom error into lookup() method
-			return NewBindFieldMissingError(eb.source.GetName(), eb.name)
+			return 0, NewBindFieldMissingError(eb.source.GetName(), eb.name)
 		}
-		uintVal, bindErr := parseUint(val)
+		parsedVal, bindErr := parseUint(val)
 		if bindErr != nil {
-			return bindErr.withFuncName("BindUintValue")
+			return 0, bindErr.withFuncName("ToUint64")
 		}
-		*dest = uintVal
-		return nil
+		return parsedVal, nil
 	})
 }
 
-func (eb *envBinder) BindFloatValueTo(dest *float64) Binding {
-	return eb.newBinding(func() error {
-		strVal, err := eb.lookup()
-		if err != nil {
-			// TODO: we might want to integrate custom error into lookup() method
-			return NewBindFieldMissingError(eb.source.GetName(), eb.name)
-		}
-		val, bindErr := parseFloat(strVal)
-		if bindErr != nil {
-			return bindErr.withFuncName("BindFloatValue")
-		}
-		*dest = val
-		return nil
-	})
-}
-
-func (eb *envBinder) BindBoolValueTo(dest *bool) Binding {
-	return eb.newBinding(func() error {
+func (eb *envBinder) ToFloat64() TypedBinding[float64] {
+	return ToBinding(eb.name, eb.source, func() (float64, error) {
 		val, err := eb.lookup()
 		if err != nil {
-			return err
+			return 0, NewBindFieldMissingError(eb.source.GetName(), eb.name)
 		}
-		b, err := strconv.ParseBool(val)
-		if err != nil {
-			return err
+		parsedVal, bindErr := parseFloat(val)
+		if bindErr != nil {
+			return 0, bindErr.withFuncName("ToFloat64")
 		}
-		*dest = b
-		return nil
+		return parsedVal, nil
 	})
 }
 
+func (eb *envBinder) ToBool() TypedBinding[bool] {
+	return ToBinding(eb.name, eb.source, func() (bool, error) {
+		val, err := eb.lookup()
+		if err != nil {
+			return false, NewBindFieldMissingError(eb.source.GetName(), eb.name)
+		}
+		parsedVal, bindErr := strconv.ParseBool(val)
+		if bindErr != nil {
+			return false, err
+		}
+		return parsedVal, nil
+	})
+}
+
+/*
 func (eb *envBinder) BindTextBasedValueTo(dest encoding.TextUnmarshaler) Binding {
 	return eb.newBinding(func() error {
 		val, err := eb.lookup()
@@ -167,32 +151,11 @@ func (eb *envBinder) BindArrayValueTo(length *int, element *func(int) LazySingle
 		return nil
 	})
 }
+*/
 
 func parseEnvKeyValue(kv string) (string, string) {
 	if idx := strings.IndexRune(kv, '='); idx != -1 {
 		return kv[:idx], kv[idx+1:]
 	}
 	return kv, ""
-}
-
-type envBinding struct {
-	binder *envBinder
-	apply  func() error
-}
-
-var _ interface {
-	Binding
-	BindingFromSource
-} = &envBinding{}
-
-func (eb *envBinding) Apply() error {
-	return eb.apply()
-}
-
-func (eb *envBinding) Source() Source {
-	return eb.binder.source
-}
-
-func (eb *envBinding) BoundName() string {
-	return eb.binder.name
 }

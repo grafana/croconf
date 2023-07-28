@@ -14,7 +14,7 @@ We know that there are plenty of [other Go configuration](https://github.com/ave
 3. Untyped and reflection-heavy:
     - they fail at run-time instead of compile-time
     - e.g. your app panics because the type for some infrequently used and not very well tested option doesn't implement `encoding.TextUnmarshaler`
-    - struct tags are used for _everything_ :scream:
+    - struct tags are used for _everything_ and a minor typo will mess everything up but remain unnoticed :scream:
     - alternatively, you may have to do a ton of type assertions deep in your codebase
 4. Un-queriable:
     - there is no metadata about the final consolidated config values
@@ -25,6 +25,9 @@ We know that there are plenty of [other Go configuration](https://github.com/ave
     - a typo in only some of these these strings might go unnoticed for a long while or cause a panic
 6. Terrible error messages:
 	- users of a Go application don’t need to know Go implementation details like `strconv.ParseInt` or
+7. No way to add extra validation for custom constraints next to the option definition
+8. Cannot attach context when parsing and validating config values
+
 
 The impetus for croconf was [k6](https://github.com/k6io/k6)'s very complicated configuration. We have a lot of options and most options have _at least_ 5 hierarchical value sources: their default values, JSON config, exported `options` in the JS scripts, environment variables, and CLI flag values. Some options have more... :sob:
 

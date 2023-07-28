@@ -1,6 +1,6 @@
 module go.k6.io/croconf/examples/croconf-complex-example
 
-go 1.16
+go 1.20
 
 replace go.k6.io/croconf => ../../
 

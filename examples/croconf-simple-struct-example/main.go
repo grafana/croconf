@@ -9,17 +9,32 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 
 	"go.k6.io/croconf"
 )
 
+type MyCustomType struct {
+	foo, bar string
+}
+
+func MyCustomTypeFromStr(s string) (MyCustomType, error) {
+	parts := strings.SplitN(s, ":", 2)
+	res := MyCustomType{foo: parts[0]}
+	if len(parts) > 1 {
+		res.bar = parts[1]
+	}
+	return res, nil
+}
+
 // SimpleConfig is a normal Go struct with plain Go property types.
 type SimpleConfig struct {
-	RPPs int64
-	DNS  struct {
+	RPS int64
+	DNS struct {
 		Server net.IP // type that implements encoding.TextUnmarshaler
 		// ... more nested fields
 	}
+	MyCustom MyCustomType
 	// ... more config fields...
 }
 
@@ -31,29 +46,30 @@ func NewScriptConfig(
 	conf := &SimpleConfig{}
 
 	cm.AddField(
-		croconf.NewInt64Field(
-			&conf.RPPs,
-			jsonSource.From("rps"),
-			envVarsSource.From("APP_RPS"),
-			cliSource.FromNameAndShorthand("rps", "r"),
-			// ... more bindings - every field can have as many or as few as needed
-		),
-		croconf.WithDescription("requests per second"),
-		croconf.IsRequired(),
-		// ... more field options like validators, meta-information, etc.
+		croconf.NewField(&conf.RPS).
+			WithDefault(100).
+			WithBinding(jsonSource.From("rps").ToInt64()).
+			WithBinding(envVarsSource.From("APP_RPS").ToInt64()).
+			WithBinding(cliSource.FromNameAndShorthand("rps", "r").ToInt64()),
 	)
 
 	cm.AddField(
-		croconf.NewTextBasedField(
-			&conf.DNS.Server,
-			croconf.DefaultStringValue("8.8.8.8"),
-			jsonSource.From("dns").From("server"),
-			envVarsSource.From("APP_DNS_SERVER"),
-		),
-		croconf.WithDescription("server for DNS queries"),
-	)
+		croconf.NewField(&conf.MyCustom).
+			WithBinding(
+				croconf.StringToCustomType(envVarsSource.From("MYCUSTOM").ToString(), MyCustomTypeFromStr),
+			))
 
-	// ... more fields
+	/*
+		cm.AddField(
+			croconf.NewTextBasedField(
+				&conf.DNS.Server,
+				croconf.DefaultStringValue("8.8.8.8"),
+				jsonSource.From("dns").From("server"),
+				envVarsSource.From("APP_DNS_SERVER"),
+			),
+			croconf.WithDescription("server for DNS queries"),
+		)
+	*/
 
 	return conf
 }

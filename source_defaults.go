@@ -1,5 +1,6 @@
 package croconf
 
+/*
 import (
 	"encoding"
 )
@@ -69,3 +70,5 @@ func (dcv DefaultCustomValue) BindValue() Binding {
 }
 
 // TODO: sources for the rest of the types
+
+*/

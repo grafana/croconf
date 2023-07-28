@@ -7,10 +7,11 @@ import (
 )
 
 type Manager struct {
-	sources      []Source
-	seenSources  map[Source]struct{}
-	fields       []*ManagedField
-	fieldsByDest map[interface{}]*ManagedField
+	sources            []Source
+	seenSources        map[Source]struct{}
+	fields             []Field
+	consolidatedFields []ConsolidatedField
+	fieldsByDest       map[interface{}]int
 
 	defaultSourceOfFieldNames Source
 }
@@ -19,8 +20,8 @@ type ManagerOption func(*Manager)
 
 func NewManager(options ...ManagerOption) *Manager {
 	m := &Manager{
-		fields:       make([]*ManagedField, 0),
-		fieldsByDest: make(map[interface{}]*ManagedField),
+		fields:       make([]Field, 0),
+		fieldsByDest: make(map[interface{}]int),
 		sources:      make([]Source, 0),
 		seenSources:  make(map[Source]struct{}),
 	}
@@ -34,25 +35,23 @@ func NewManager(options ...ManagerOption) *Manager {
 
 func (m *Manager) deriveFieldName(fieldIndex int) string {
 	field := m.fields[fieldIndex]
-	var firstCanonicalBinding, firstNonDefaultBinding BindingFromSource
+	var firstCanonicalBinding, firstNonDefaultBinding Binding
 	for _, binding := range field.Bindings() {
-		if bindingFromSource, ok := binding.(BindingFromSource); ok {
-			source := bindingFromSource.Source()
-			if source != nil && firstCanonicalBinding == nil && source == m.defaultSourceOfFieldNames {
-				firstCanonicalBinding = bindingFromSource
-			}
-			if source != nil && firstNonDefaultBinding == nil {
-				firstNonDefaultBinding = bindingFromSource
-			}
+		source := binding.Source()
+		if source != nil && firstCanonicalBinding == nil && source == m.defaultSourceOfFieldNames {
+			firstCanonicalBinding = binding
+		}
+		if source != nil && firstNonDefaultBinding == nil {
+			firstNonDefaultBinding = binding
 		}
 	}
 
 	if firstCanonicalBinding != nil {
-		return firstCanonicalBinding.BoundName()
+		return firstCanonicalBinding.Identifier()
 	}
 
 	if firstNonDefaultBinding != nil {
-		return firstNonDefaultBinding.BoundName()
+		return firstNonDefaultBinding.Identifier()
 	}
 
 	// TODO: some better fallback? for example, a way to get field names from
@@ -64,44 +63,32 @@ func (m *Manager) deriveFieldName(fieldIndex int) string {
 	return fmt.Sprintf("field-%d", fieldIndex)
 }
 
-func (m *Manager) AddField(field Field, options ...ManagedFieldOption) *ManagedField {
-	mf := &ManagedField{
-		Field: field,
-	}
+func (m *Manager) AddField(field Field) {
+	idx := len(m.fields)
+	m.fieldsByDest[field.Destination()] = idx
+	m.fields = append(m.fields, field)
 
-	for _, opt := range options {
-		opt(mf)
-	}
-
-	m.fields = append(m.fields, mf)
-	m.fieldsByDest[field.Destination()] = mf
-
-	m.addSources(mf)
-
-	if mf.Name == "" {
-		mf.Name = m.deriveFieldName(len(m.fields) - 1)
-	}
-
-	return mf
+	m.addSources(field)
 }
 
 func (m *Manager) addSources(field Field) {
 	for _, b := range field.Bindings() {
-		if fromSource, ok := b.(BindingFromSource); ok {
-			s := fromSource.Source()
-			if _, seen := m.seenSources[s]; s != nil && !seen {
-				m.seenSources[s] = struct{}{}
-				m.sources = append(m.sources, s)
-			}
+		s := b.Source()
+		if _, seen := m.seenSources[s]; s != nil && !seen {
+			m.seenSources[s] = struct{}{}
+			m.sources = append(m.sources, s)
 		}
 	}
 }
 
-func (m *Manager) Field(dest interface{}) *ManagedField {
-	return m.fieldsByDest[dest]
+func (m *Manager) Field(dest interface{}) Field {
+	if idx, ok := m.fieldsByDest[dest]; ok {
+		return m.fields[idx]
+	}
+	return nil
 }
 
-func (m *Manager) Fields() []*ManagedField {
+func (m *Manager) Fields() []Field {
 	return m.fields
 }
 
@@ -119,16 +106,22 @@ func (m *Manager) Consolidate() error {
 		return consolidateErrorMessage(errs, "Config errors: ")
 	}
 
-	for _, f := range m.fields {
-		errs = append(errs, f.Consolidate()...)
+	m.consolidatedFields = make([]ConsolidatedField, len(m.fields))
+	for i, f := range m.fields {
+		cf, err := f.Consolidate()
+		m.consolidatedFields[i] = cf
+
+		if err != nil {
+			errs = append(errs, err)
+		}
 	}
 
 	if len(errs) > 0 {
 		return consolidateErrorMessage(errs, "Config value errors: ")
 	}
 
-	for _, f := range m.fields {
-		fieldErr := f.Validate()
+	for _, cf := range m.consolidatedFields {
+		fieldErr := cf.Validate()
 		if fieldErr != nil {
 			errs = append(errs, fieldErr)
 		}
